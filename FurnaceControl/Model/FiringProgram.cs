@@ -75,7 +75,7 @@ namespace FurnaceControl
         {
             var parts = data.Split('|');
             string name = parts[0];
-            DateTime date = DateTime.ParseExact(parts[0], Extensions.DateTimeFormat, CultureInfo.InvariantCulture);
+            DateTime date = DateTime.ParseExact(parts[1], Extensions.DateTimeFormat, CultureInfo.InvariantCulture);
             string[] blocksStr = parts[2].Split(';');
             List<ProgramBlock> blocks = new List<ProgramBlock>();
             foreach (var block in blocksStr)

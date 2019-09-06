@@ -35,10 +35,11 @@
             {
                 string[] programs = Properties.Settings.Default.Programs.Split(Environment.NewLine.ToArray());
                 P = programs.Select(x => FiringProgram.FromFurnaceString(x.Trim())).ToList();
+                UpdateAvailablePrograms();
             }
             catch
             {
-                L.Add("Wrong data in Settings.Default.Programs!");
+                L.Add("Wrong data in Programs!");
             }
         }
 
@@ -46,6 +47,14 @@
         {
             switch (e.PropertyName)
             {
+                case "Halted":
+                    StartHaltButton.Text = "START";
+                    L.Add("Furnace is halted");
+                    break;
+                case "Start":
+                    StartHaltButton.Text = "HALT";
+                    L.Add("Program Started");
+                    break;
                 case "CloseSmokeAlert":
                     L.Add("Please close smokestack!");
                     break;
@@ -66,7 +75,7 @@
                     L.Add($"Heating: {F.Heating}");
                     break;
                 default:
-                    L.Add($"NotImplemented Event: [{e.PropertyName}]");
+                    L.Add($"Not Implemented Event: [{e.PropertyName}]");
                     break;
             }
         }
@@ -183,8 +192,7 @@
         {
             if (F.Halted)
             {
-                F.SetProgrm(P[ProgramSelector.SelectedIndex]);
-                F.Start();
+                F.Start(P[ProgramSelector.SelectedIndex]);
             }
             else
             {
@@ -214,6 +222,7 @@
         private void SaveBeforeClosing(object sender, FormClosingEventArgs e)
         {
             Properties.Settings.Default.Programs = string.Join(Environment.NewLine, P.Select(x => x.ToFurnaceString()));
+            Properties.Settings.Default.Save();
         }
     }
 }

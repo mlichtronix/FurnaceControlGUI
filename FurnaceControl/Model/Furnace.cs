@@ -145,7 +145,10 @@
                     ProgramCounter = int.Parse(msg.Data);                    
                     break;
                 case MessageType.Halt:
-                    Halted = msg.Data == Responses.Halted;
+                    Halted = true;
+                    break;
+                case MessageType.Start:
+                    Halted = false;
                     break;
                 case MessageType.HandShake:
                     Status = SerialStatus.Connected;
@@ -179,7 +182,7 @@
             string content = ((SerialPort)sender).ReadLine();
             ProcessReceivedMessage(Message.FromStringAndDate(content, time));
         }
-               
+
         // Public Methods
         protected virtual void OnPropertyChanged(string propertyName)
         {
@@ -223,23 +226,13 @@
 
         public void Halt()
         {
-            if (!Halted)
-            {
-                SendMessage(MessageFactory.Halt);
-            }
+            SendMessage(MessageFactory.Halt);            
         }
 
-        public void Start()
+        public void Start(FiringProgram p)
         {
-            if (Halted)
-            {
-                SendMessage(new Message(MessageType.Start, StartTime.ToFurnaceString()));
-            }
-        }
-
-        public void SetProgrm(FiringProgram program)
-        {
-            SendMessage(new Message(MessageType.SetCustomProgram, program.ToString()));
+            SendMessage(new Message(MessageType.SetCustomProgram, p.ToFurnaceString()));
+            SendMessage(new Message(MessageType.Start, StartTime.ToFurnaceString()));
         }
     }
 }

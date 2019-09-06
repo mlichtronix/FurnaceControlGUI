@@ -29,10 +29,37 @@ namespace FurnaceControl
         [DisplayName("Wattage [10kW/30kW]")]
         public Wattage PowerDrain { get; set; }
 
+        /// <summary>
+        /// Creates empty instance of <see cref="ProgramBlock"/>
+        /// </summary>
+        public ProgramBlock() { }
+
+        /// <summary>
+        /// Creates instance of <see cref="ProgramBlock"/>
+        /// </summary>
+        /// <param name="temperature"></param>
+        /// <param name="duration"></param>
+        /// <param name="drain"></param>
+        public ProgramBlock(int temperature, int duration, Wattage drain)
+        {
+            TargetTemperature = temperature;
+            TemperingDuration = duration;
+            PowerDrain = drain;
+        }
+
+        /// <summary>
+        /// Converts <see cref="ProgramBlock"/> to human readable string
+        /// </summary>
+        /// <returns></returns>
         public override string ToString()
         {
-            return $"[{TargetTemperature}°C,{TemperingDuration}min,{(int)PowerDrain}kW]";
+            return $"[{TargetTemperature}°C, {TemperingDuration}min, {(int)PowerDrain}kW]";
         }
+
+        /// <summary>
+        /// Converts <see cref="ProgramBlock"/> to string that Furnace Controler understands
+        /// </summary>
+        /// <returns></returns>
         public string ToFurnaceString()
         {
             return $"{TargetTemperature}*{TemperingDuration}*{(int)PowerDrain}";
