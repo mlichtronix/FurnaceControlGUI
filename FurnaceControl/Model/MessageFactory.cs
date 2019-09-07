@@ -43,5 +43,13 @@ namespace FurnaceControl
                 return new Message(MessageType.Halt);
             }
         }
+
+        public static Message GetCurProgram
+        {
+            get
+            {
+                return new Message(MessageType.GetCurProg);
+            }
+        }
     }
 }

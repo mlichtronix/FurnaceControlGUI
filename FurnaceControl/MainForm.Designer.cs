@@ -50,6 +50,7 @@
             this.GraphRefresh = new System.Windows.Forms.Timer(this.components);
             this.panel3 = new System.Windows.Forms.Panel();
             this.splitter1 = new System.Windows.Forms.Splitter();
+            this.SchedulePicker = new System.Windows.Forms.DateTimePicker();
             this.menuStrip1.SuspendLayout();
             this.groupBox1.SuspendLayout();
             this.panel1.SuspendLayout();
@@ -109,7 +110,7 @@
             this.groupBox1.Location = new System.Drawing.Point(10, 10);
             this.groupBox1.Name = "groupBox1";
             this.groupBox1.Padding = new System.Windows.Forms.Padding(5);
-            this.groupBox1.Size = new System.Drawing.Size(398, 51);
+            this.groupBox1.Size = new System.Drawing.Size(440, 51);
             this.groupBox1.TabIndex = 3;
             this.groupBox1.TabStop = false;
             this.groupBox1.Text = "Port";
@@ -117,7 +118,7 @@
             // ConnectButton
             // 
             this.ConnectButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.ConnectButton.Location = new System.Drawing.Point(311, 18);
+            this.ConnectButton.Location = new System.Drawing.Point(353, 18);
             this.ConnectButton.Name = "ConnectButton";
             this.ConnectButton.Size = new System.Drawing.Size(76, 23);
             this.ConnectButton.TabIndex = 4;
@@ -141,14 +142,15 @@
             this.panel1.Controls.Add(this.groupBox3);
             this.panel1.Controls.Add(this.groupBox1);
             this.panel1.Dock = System.Windows.Forms.DockStyle.Right;
-            this.panel1.Location = new System.Drawing.Point(754, 24);
+            this.panel1.Location = new System.Drawing.Point(712, 24);
             this.panel1.Name = "panel1";
             this.panel1.Padding = new System.Windows.Forms.Padding(10);
-            this.panel1.Size = new System.Drawing.Size(418, 668);
+            this.panel1.Size = new System.Drawing.Size(460, 668);
             this.panel1.TabIndex = 4;
             // 
             // FurnaceGroup
             // 
+            this.FurnaceGroup.Controls.Add(this.SchedulePicker);
             this.FurnaceGroup.Controls.Add(this.button4);
             this.FurnaceGroup.Controls.Add(this.button3);
             this.FurnaceGroup.Controls.Add(this.button2);
@@ -158,27 +160,27 @@
             this.FurnaceGroup.Enabled = false;
             this.FurnaceGroup.Location = new System.Drawing.Point(10, 61);
             this.FurnaceGroup.Name = "FurnaceGroup";
-            this.FurnaceGroup.Size = new System.Drawing.Size(398, 100);
+            this.FurnaceGroup.Size = new System.Drawing.Size(440, 94);
             this.FurnaceGroup.TabIndex = 5;
             this.FurnaceGroup.TabStop = false;
             this.FurnaceGroup.Text = "Furnace";
             // 
             // button4
             // 
-            this.button4.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-            this.button4.Location = new System.Drawing.Point(71, 66);
+            this.button4.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
+            this.button4.Location = new System.Drawing.Point(71, 61);
             this.button4.Name = "button4";
-            this.button4.Size = new System.Drawing.Size(25, 25);
+            this.button4.Size = new System.Drawing.Size(25, 23);
             this.button4.TabIndex = 8;
             this.button4.Text = "X";
             this.button4.UseVisualStyleBackColor = true;
             // 
             // button3
             // 
-            this.button3.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-            this.button3.Location = new System.Drawing.Point(40, 66);
+            this.button3.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
+            this.button3.Location = new System.Drawing.Point(40, 61);
             this.button3.Name = "button3";
-            this.button3.Size = new System.Drawing.Size(25, 25);
+            this.button3.Size = new System.Drawing.Size(25, 23);
             this.button3.TabIndex = 7;
             this.button3.Text = "+";
             this.button3.UseVisualStyleBackColor = true;
@@ -186,26 +188,28 @@
             // 
             // button2
             // 
-            this.button2.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-            this.button2.Location = new System.Drawing.Point(9, 66);
+            this.button2.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
+            this.button2.Location = new System.Drawing.Point(9, 61);
             this.button2.Name = "button2";
-            this.button2.Size = new System.Drawing.Size(25, 25);
+            this.button2.Size = new System.Drawing.Size(25, 23);
             this.button2.TabIndex = 6;
             this.button2.Text = "=";
             this.button2.UseVisualStyleBackColor = true;
             // 
             // ProgramSelector
             // 
+            this.ProgramSelector.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
             this.ProgramSelector.FormattingEnabled = true;
             this.ProgramSelector.Location = new System.Drawing.Point(9, 28);
             this.ProgramSelector.Name = "ProgramSelector";
-            this.ProgramSelector.Size = new System.Drawing.Size(378, 21);
+            this.ProgramSelector.Size = new System.Drawing.Size(420, 21);
             this.ProgramSelector.TabIndex = 5;
             // 
             // StartHaltButton
             // 
             this.StartHaltButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-            this.StartHaltButton.Location = new System.Drawing.Point(312, 67);
+            this.StartHaltButton.Location = new System.Drawing.Point(354, 61);
             this.StartHaltButton.Name = "StartHaltButton";
             this.StartHaltButton.Size = new System.Drawing.Size(75, 23);
             this.StartHaltButton.TabIndex = 0;
@@ -220,7 +224,7 @@
             this.groupBox3.Location = new System.Drawing.Point(10, 332);
             this.groupBox3.Name = "groupBox3";
             this.groupBox3.Padding = new System.Windows.Forms.Padding(5, 5, 3, 3);
-            this.groupBox3.Size = new System.Drawing.Size(398, 326);
+            this.groupBox3.Size = new System.Drawing.Size(440, 326);
             this.groupBox3.TabIndex = 4;
             this.groupBox3.TabStop = false;
             this.groupBox3.Text = "Log";
@@ -234,7 +238,7 @@
             this.LogBox.Name = "LogBox";
             this.LogBox.ReadOnly = true;
             this.LogBox.ScrollBars = System.Windows.Forms.RichTextBoxScrollBars.ForcedVertical;
-            this.LogBox.Size = new System.Drawing.Size(390, 305);
+            this.LogBox.Size = new System.Drawing.Size(432, 305);
             this.LogBox.TabIndex = 0;
             this.LogBox.Text = "";
             // 
@@ -245,7 +249,7 @@
             this.GraphBox.Dock = System.Windows.Forms.DockStyle.Fill;
             this.GraphBox.Location = new System.Drawing.Point(0, 0);
             this.GraphBox.Name = "GraphBox";
-            this.GraphBox.Size = new System.Drawing.Size(754, 663);
+            this.GraphBox.Size = new System.Drawing.Size(712, 663);
             this.GraphBox.TabIndex = 5;
             this.GraphBox.TabStop = false;
             this.GraphBox.SizeChanged += new System.EventHandler(this.UpdateImageNow);
@@ -263,7 +267,7 @@
             this.panel3.Dock = System.Windows.Forms.DockStyle.Fill;
             this.panel3.Location = new System.Drawing.Point(0, 24);
             this.panel3.Name = "panel3";
-            this.panel3.Size = new System.Drawing.Size(754, 668);
+            this.panel3.Size = new System.Drawing.Size(712, 668);
             this.panel3.TabIndex = 6;
             // 
             // splitter1
@@ -272,9 +276,21 @@
             this.splitter1.Dock = System.Windows.Forms.DockStyle.Bottom;
             this.splitter1.Location = new System.Drawing.Point(0, 663);
             this.splitter1.Name = "splitter1";
-            this.splitter1.Size = new System.Drawing.Size(754, 5);
+            this.splitter1.Size = new System.Drawing.Size(712, 5);
             this.splitter1.TabIndex = 6;
             this.splitter1.TabStop = false;
+            // 
+            // SchedulePicker
+            // 
+            this.SchedulePicker.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.SchedulePicker.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(238)));
+            this.SchedulePicker.Format = System.Windows.Forms.DateTimePickerFormat.Time;
+            this.SchedulePicker.Location = new System.Drawing.Point(102, 62);
+            this.SchedulePicker.MinDate = new System.DateTime(2019, 1, 1, 0, 0, 0, 0);
+            this.SchedulePicker.Name = "SchedulePicker";
+            this.SchedulePicker.Size = new System.Drawing.Size(246, 21);
+            this.SchedulePicker.TabIndex = 9;
             // 
             // MainForm
             // 
@@ -327,6 +343,7 @@
         private System.Windows.Forms.Button button4;
         private System.Windows.Forms.Button button3;
         private System.Windows.Forms.Button button2;
+        private System.Windows.Forms.DateTimePicker SchedulePicker;
     }
 }
 

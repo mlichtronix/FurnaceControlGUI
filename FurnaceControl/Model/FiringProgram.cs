@@ -32,15 +32,21 @@ namespace FurnaceControl
         /// </summary>
         public FiringProgram() { }
 
+        public string ToFurnaceString()
+        {
+            //Example: "Custom program|400*30*10;960*30*30;1200*60*30"
+            return $"{Name}|{string.Join(";", Blocks.Select(x => x.ToFurnaceString()))}";
+        }
 
-        internal static FiringProgram FromString(string data)
+        internal static FiringProgram FromFurnaceString(string data)
         {
             var program = new FiringProgram();
-            string[] pairs = data.Split('|');
+            var nameBlocks = data.Split('|');            
+            var triplets = nameBlocks[1].Split(';');
             List<ProgramBlock> blocks = new List<ProgramBlock>();
-            foreach (var pair in pairs)
+            foreach (var triplet in triplets)
             {
-                string[] tdp = pair.Split('*');
+                string[] tdp = triplet.Split('*');
                 if (tdp.Length == 3)
                 {
                     var block = new ProgramBlock()
@@ -56,6 +62,7 @@ namespace FurnaceControl
                     throw new Exception($"Program is in wrong format! [{data}]");
                 }
             }
+            program.Name = nameBlocks[0];
             program.Blocks = blocks.ToArray();
             return program;
         }
@@ -63,30 +70,6 @@ namespace FurnaceControl
         public override string ToString()
         {
             return Name;
-        }
-
-        public string ToFurnaceString()
-        {
-            //Example: "Custom program|2019-12-31-23-59-59|400*30*10;960*30*30;1200*60*30"
-            return $"{Name}|{Schedule.ToFurnaceString()}|{string.Join(";", Blocks.Select(x => x.ToFurnaceString()))}";
-        }
-
-        public static FiringProgram FromFurnaceString(string data)
-        {
-            var parts = data.Split('|');
-            string name = parts[0];
-            DateTime date = DateTime.ParseExact(parts[1], Extensions.DateTimeFormat, CultureInfo.InvariantCulture);
-            string[] blocksStr = parts[2].Split(';');
-            List<ProgramBlock> blocks = new List<ProgramBlock>();
-            foreach (var block in blocksStr)
-            {
-                string[] values = block.Split('*');
-                int c = int.Parse(values[0]);
-                int d = int.Parse(values[1]);
-                int w = int.Parse(values[2]);
-                blocks.Add(new ProgramBlock() { TargetTemperature = c, TemperingDuration = d, PowerDrain = (Wattage)w });
-            }
-            return new FiringProgram() { Name = name, Schedule = date, Blocks = blocks.ToArray() };
         }
     }
 }

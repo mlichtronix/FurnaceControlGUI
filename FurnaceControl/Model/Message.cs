@@ -32,6 +32,11 @@
 
         public override string ToString()
         {
+            return $"{Type}{DataSeparator}{Data}";
+        }
+
+        public string ToFurnaceString()
+        {
             return $"{(int)Type}{DataSeparator}{Data}";
         }
 

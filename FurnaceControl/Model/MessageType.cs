@@ -8,9 +8,8 @@
         GetCurTemp        = 400,    // Get Current Temperature in furnace.
         GetPcStatus       = 500,    // Get Furnace Program Counter Status.
         GetCurProg        = 600,    // Get Current running Program from furnace.
-        SetCustomProgram  = 650,    // Load customized program.
-        SetPredProgrm     = 700,    // Set Predefined program and execute it.
-        Start             = 750,    // Start selected program.
+        SetProgram        = 650,    // Load customized program.
+        Start             = 700,    // Start selected program.
         CloseSmokeAlert   = 800,    // Furnace reached temperature and need to close smokestack.
         LogMessage        = 900,    // Unspecified Logging message.
         Heating           = 950,    // Heating Update.

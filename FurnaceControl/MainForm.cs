@@ -55,6 +55,9 @@
                     StartHaltButton.Text = "HALT";
                     L.Add("Program Started");
                     break;
+                case "StartTime":
+                    L.Add("Time set to:" + F.StartTime);
+                    break;
                 case "CloseSmokeAlert":
                     L.Add("Please close smokestack!");
                     break;
@@ -192,7 +195,16 @@
         {
             if (F.Halted)
             {
-                F.Start(P[ProgramSelector.SelectedIndex]);
+                if (ProgramSelector.SelectedIndex != -1)
+                {
+                    F.SetTime(DateTime.Now);
+                    F.SetCustomProgram(P[ProgramSelector.SelectedIndex]);
+                    F.Start(SchedulePicker.Value);
+                }
+                else
+                {
+                    MessageBox.Show("Select program first!");
+                }
             }
             else
             {

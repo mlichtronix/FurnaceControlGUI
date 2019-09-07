@@ -3,6 +3,7 @@
     using System;
     using System.IO.Ports;
     using System.ComponentModel;
+    using System.Globalization;
 
     public partial class Furnace : INotifyPropertyChanged
     {
@@ -106,7 +107,7 @@
             {
                 try
                 {
-                    comport.WriteLine(msg.ToString());
+                    comport.WriteLine(msg.ToFurnaceString());
                     Status = SerialStatus.Connected;
                     return;
                 }
@@ -153,10 +154,11 @@
                 case MessageType.HandShake:
                     Status = SerialStatus.Connected;
                     break;
-                case MessageType.SetCustomProgram:
-                    Program = FiringProgram.FromString(msg.Data);
+                case MessageType.SetProgram:
+                    SendMessage(MessageFactory.GetCurProgram);
                     break;
-                case MessageType.SetPredProgrm:
+                case MessageType.SetTime:
+                    StartTime = DateTime.ParseExact(msg.Data.Trim(), Extensions.DateTimeFormat, CultureInfo.InvariantCulture);
                     break;
                 default:
                     L.Add($"Invalid message received: [{msg.Data}]");
@@ -168,7 +170,7 @@
         {
             try
             {
-                Program = FiringProgram.FromString(data);
+                Program = FiringProgram.FromFurnaceString(data);
             }
             catch (Exception ex)
             {
@@ -229,10 +231,19 @@
             SendMessage(MessageFactory.Halt);            
         }
 
-        public void Start(FiringProgram p)
+        internal void SetTime(DateTime value)
         {
-            SendMessage(new Message(MessageType.SetCustomProgram, p.ToFurnaceString()));
-            SendMessage(new Message(MessageType.Start, StartTime.ToFurnaceString()));
+            SendMessage(new Message(MessageType.SetTime, value.ToFurnaceString()));
+        }
+
+        public void SetCustomProgram(FiringProgram p)
+        {
+            SendMessage(new Message(MessageType.SetProgram, p.ToFurnaceString()));
+        }
+
+        public void Start(DateTime scheduleTime)
+        {        
+            SendMessage(new Message(MessageType.Start, scheduleTime.ToFurnaceString()));
         }
     }
 }
