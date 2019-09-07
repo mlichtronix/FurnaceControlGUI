@@ -14,7 +14,7 @@
 
         // Properties
         public List<Measurement> Measurements { get; set; } = new List<Measurement>();
-        public List<ProgramBlock> Program { get; set; } = new List<ProgramBlock>();
+        public ProgramBlock[] Program { get; set; }
         public List<Heating> Heatings { get; set; } = new List<Heating>();
         public bool SmokeStackClosed { get; set; } = false;
         public int ProgramCounter { get; set; } = -1;

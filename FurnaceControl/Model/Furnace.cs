@@ -118,7 +118,7 @@
                 }
                 catch (Exception ex)
                 {
-                    L.Add(ex.Message);
+                    L.Add($"SendMessage: [{ex.Message}]");
                 }                
             }
             Status = SerialStatus.Disconnected;
@@ -128,42 +128,49 @@
         {            
             switch (msg.Type)
             {
-                case MessageType.CloseSmokeAlert:
-                    OnPropertyChanged(msg.Type.ToString());
-                    break;
-                case MessageType.Error:
-                    break;
-                case MessageType.Heating:
-                    Heating = (Wattage)int.Parse(msg.Data);
-                    break;
-                case MessageType.GetCurProg:
-                    ParseProgram(msg.Data);
-                    break;
-                case MessageType.GetCurTemp:
-                    Temperature = int.Parse(msg.Data);
-                    break;
-                case MessageType.GetPcStatus:
-                    ProgramCounter = int.Parse(msg.Data);                    
-                    break;
-                case MessageType.Halt:
-                    Halted = true;
-                    break;
-                case MessageType.Start:
-                    Halted = false;
-                    break;
-                case MessageType.HandShake:
+                case MessageType.HandShake:         // 200
                     Status = SerialStatus.Connected;
                     break;
-                case MessageType.SetProgram:
+                case MessageType.SetTime:           // 300
+                    L.Add($"Furnace Time: [{ParseTime(msg.Data)}]");
+                    break;
+                case MessageType.GetCurTemp:        // 400
+                    Temperature = int.Parse(msg.Data);
+                    break;
+                case MessageType.GetPcStatus:       // 500
+                    ProgramCounter = int.Parse(msg.Data);
+                    break;
+                case MessageType.GetCurProg:        // 600
+                    ParseProgram(msg.Data);
+                    break;
+                case MessageType.SetProgram:        // 650
                     SendMessage(MessageFactory.GetCurProgram);
                     break;
-                case MessageType.SetTime:
-                    StartTime = DateTime.ParseExact(msg.Data.Trim(), Extensions.DateTimeFormat, CultureInfo.InvariantCulture);
+                case MessageType.Start:             // 700
+                    Halted = false;
+                    StartTime = ParseTime(msg.Data);
                     break;
+                case MessageType.CloseSmokeAlert:   // 800
+                    OnPropertyChanged(msg.Type.ToString());
+                    break;
+                case MessageType.Error:             // 990
+                    break;
+                case MessageType.Heating:           // 950
+                    Heating = (Wattage)int.Parse(msg.Data);
+                    break;
+                case MessageType.Halt:              // 999
+                    Halted = true;
+                    L.Add("Furnace is Halted");
+                    break;                
                 default:
-                    L.Add($"Invalid message received: [{msg.Data}]");
+                    L.Add($"Invalid Message Type: [{msg.Data}]");
                     break;
             }
+        }
+
+        private DateTime ParseTime(string t)
+        {
+            return DateTime.ParseExact(t.Trim(), Extensions.DateTimeFormat, CultureInfo.InvariantCulture);
         }
 
         private void ParseProgram(string data)
@@ -193,9 +200,11 @@
 
         public void ConnectDevice(string portName)
         {
-            comport = new SerialPort(portName, 9600);
-            comport.Encoding = System.Text.Encoding.ASCII;
-            comport.ReadTimeout = 3000;
+            comport = new SerialPort(portName, 9600)
+            {
+                Encoding = System.Text.Encoding.ASCII,
+                ReadTimeout = 3000
+            };
             comport.DataReceived += new SerialDataReceivedEventHandler(HandleReceivedMessage);
 
             try
@@ -231,9 +240,9 @@
             SendMessage(MessageFactory.Halt);            
         }
 
-        internal void SetTime(DateTime value)
+        internal void SetTime(DateTime t)
         {
-            SendMessage(new Message(MessageType.SetTime, value.ToFurnaceString()));
+            SendMessage(new Message(MessageType.SetTime, t.ToFurnaceString()));
         }
 
         public void SetCustomProgram(FiringProgram p)
@@ -241,9 +250,9 @@
             SendMessage(new Message(MessageType.SetProgram, p.ToFurnaceString()));
         }
 
-        public void Start(DateTime scheduleTime)
+        public void Start(DateTime t)
         {        
-            SendMessage(new Message(MessageType.Start, scheduleTime.ToFurnaceString()));
+            SendMessage(new Message(MessageType.Start, t.ToFurnaceString()));
         }
     }
 }

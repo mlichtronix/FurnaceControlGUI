@@ -14,7 +14,7 @@
         private Furnace F;
         private Logger L = new Logger();
         private Display D = new Display();
-        private List<FiringProgram> P = new List<FiringProgram>();
+        private List<FiringProgram> P = new List<FiringProgram> ();
         
         public MainForm()
         {
@@ -45,42 +45,47 @@
 
         private void UptateValues(object sender, PropertyChangedEventArgs e)
         {
-            switch (e.PropertyName)
+            InvokeUI(() =>
             {
-                case "Halted":
-                    StartHaltButton.Text = "START";
-                    L.Add("Furnace is halted");
-                    break;
-                case "Start":
-                    StartHaltButton.Text = "HALT";
-                    L.Add("Program Started");
-                    break;
-                case "StartTime":
-                    L.Add("Time set to:" + F.StartTime);
-                    break;
-                case "CloseSmokeAlert":
-                    L.Add("Please close smokestack!");
-                    break;
-                case "Status":
-                    UpdateStatus();
-                    break;
-                case "Temperature":
-                    var m = new Measurement(F.Temperature, DateTime.Now);
-                    D.Measurements.Add(m);
-                    L.Add($"Temperature update: {m.Temperature} °C");
-                    break;
-                case "ProgramCounter":
-                    D.ProgramCounter = F.ProgramCounter;
-                    L.Add($"Current Block: {F.ProgramCounter}");
-                    break;
-                case "Heating":
-                    D.Heatings.Add(new Heating(F.Heating, DateTime.Now));
-                    L.Add($"Heating: {F.Heating}");
-                    break;
-                default:
-                    L.Add($"Not Implemented Event: [{e.PropertyName}]");
-                    break;
-            }
+                switch (e.PropertyName)
+                {
+                    case "Halted":
+                        SetStartHaltButton(F.Halted);                        
+                        break;
+                    case "Start":
+                        SetStartHaltButton(F.Halted);                        
+                        break;
+                    case "StartTime":
+                        L.Add($"Start Time: [{F.StartTime}]");
+                        break;
+                    case "CloseSmokeAlert":
+                        L.Add("Please close smokestack!");
+                        break;
+                    case "Status":
+                        UpdateStatus();
+                        break;
+                    case "Temperature":
+                        var m = new Measurement(F.Temperature, DateTime.Now);
+                        D.Measurements.Add(m);
+                        L.Add($"Temperature update: {m.Temperature} °C");
+                        break;
+                    case "ProgramCounter":
+                        D.ProgramCounter = F.ProgramCounter;
+                        L.Add($"Current Block: {F.ProgramCounter}");
+                        break;
+                    case "Heating":
+                        D.Heatings.Add(new Heating(F.Heating, DateTime.Now));
+                        L.Add($"Heating: {F.Heating}");
+                        break;
+                    case "Program":
+                        D.Program = F.Program.Blocks;
+                        L.Add($"Program set to: [{F.Program.Name}]");
+                        break;
+                    default:
+                        L.Add($"Not Implemented Event: [{e.PropertyName}]");
+                        break;
+                }
+            });
         }
 
         private void InvokeUI(Action a)
@@ -108,6 +113,18 @@
         {
             DeviceBox.DataSource = null;
             DeviceBox.DataSource = SerialPort.GetPortNames();
+        }
+
+        private void SetStartHaltButton(bool halted)
+        {
+            if (halted)
+            {
+                StartHaltButton.Text = "START";
+            }
+            else
+            {
+                StartHaltButton.Text = "HALT";
+            }
         }
 
         private void RefreshDevices(object sender, EventArgs e)
@@ -197,8 +214,9 @@
             {
                 if (ProgramSelector.SelectedIndex != -1)
                 {
-                    F.SetTime(DateTime.Now);
                     F.SetCustomProgram(P[ProgramSelector.SelectedIndex]);
+                    F.SetTime(DateTime.Now);
+                    var v = SchedulePicker.Value;
                     F.Start(SchedulePicker.Value);
                 }
                 else

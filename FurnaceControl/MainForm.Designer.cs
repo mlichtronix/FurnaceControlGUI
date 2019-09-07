@@ -237,10 +237,10 @@
             this.LogBox.Location = new System.Drawing.Point(5, 18);
             this.LogBox.Name = "LogBox";
             this.LogBox.ReadOnly = true;
-            this.LogBox.ScrollBars = System.Windows.Forms.RichTextBoxScrollBars.ForcedVertical;
             this.LogBox.Size = new System.Drawing.Size(432, 305);
             this.LogBox.TabIndex = 0;
             this.LogBox.Text = "";
+            this.LogBox.WordWrap = false;
             // 
             // GraphBox
             // 
@@ -284,8 +284,9 @@
             // 
             this.SchedulePicker.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
+            this.SchedulePicker.CustomFormat = "yyyy / MM / dd  HH:mm:ss";
             this.SchedulePicker.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(238)));
-            this.SchedulePicker.Format = System.Windows.Forms.DateTimePickerFormat.Time;
+            this.SchedulePicker.Format = System.Windows.Forms.DateTimePickerFormat.Custom;
             this.SchedulePicker.Location = new System.Drawing.Point(102, 62);
             this.SchedulePicker.MinDate = new System.DateTime(2019, 1, 1, 0, 0, 0, 0);
             this.SchedulePicker.Name = "SchedulePicker";
