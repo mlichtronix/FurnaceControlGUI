@@ -18,7 +18,7 @@
         public List<Heating> Heatings { get; set; } = new List<Heating>();
         public bool SmokeStackClosed { get; set; } = false;
         public int ProgramCounter { get; set; } = -1;
-        public DateTime Start { get; set; } = DateTime.Now;
+        public DateTime Start { get; set; }
 
         // Constructor
         public Display() { }
@@ -31,16 +31,19 @@
                 var size = g.ClipBounds.Size;
                 DateTime first = Start;
                 DateTime last = DateTime.Now;
-                float stepX = (size.Width - 10) / (float)(last - first).TotalMinutes;     // (+1.0f = Offset to get better view and to get better precission)
+                float stepX = (size.Width - 10) / (float)(last - first).TotalSeconds;     // (+1.0f = Offset to get better view and to get better precission)
                 float stepY = size.Height / (MaxTemp * 1.0f);
 
                 List<PointF> GraphPoints = new List<PointF>();
                 foreach (Measurement m in Measurements)
                 {
-                    float x = (float)(m.Time - first).TotalMinutes;
+                    float x = (float)(m.Time - first).TotalSeconds;
                     GraphPoints.Add(new PointF(x * stepX, size.Height - (m.Temperature * stepY)));
                 }
-                g.DrawLines(new Pen(Brushes.Red, 3), GraphPoints.ToArray());
+                var LinePen = new Pen(Brushes.Red, 3);
+                g.DrawCurve(LinePen, GraphPoints.ToArray());                
+                var lp = GraphPoints.Last();
+                g.FillEllipse(Brushes.Red, new RectangleF(lp.X - 5, lp.Y - 5, 10, 10));
             }
         }
 
@@ -49,20 +52,25 @@
             if (Heatings.Count > 0)
             {
                 var size = g.ClipBounds.Size;
-                DateTime first = Start;
                 DateTime last = DateTime.Now;
-                float stepX = (size.Width - 10) / (float)(last - first).TotalMinutes;     // (+1.0f = Offset to get better view and to get better precission)
-                float stepY = size.Height / (MaxTemp * 1.0f);
+                float stepX = (size.Width - 10) / (float)(last - Start).TotalSeconds;     // (+1.0f = Offset to get better view and to get better precission)
+                float stepY = (size.Height / MaxTemp) * 10;
 
-                for (int h = 0; h < Heatings.Count-1; h++)
+                for (int h = 0; h < Heatings.Count; h++)
                 {
-                    float x1 = (float)(Heatings[h].StartTime - first).TotalMinutes;
-                    float x2 = (float)(Heatings[h+1].StartTime - first).TotalMinutes;
-                    var p = new PointF(x1 * stepX, size.Height - ((int)Heatings[h].Power * stepY));
-                    var q = new PointF(x2 * stepX, size.Height - ((int)Heatings[h+1].Power * stepY));
-                    var r = new RectangleF(p.X, p.Y, q.X, q.Y);
+                    float x1 = (float)(Heatings[h].StartTime - Start).TotalSeconds;
+                    float x2 = (float)(DateTime.Now - Start).TotalSeconds;
+                    if (h < Heatings.Count-1)
+                    {
+                        x2 = (float)(Heatings[h + 1].StartTime - Start).TotalSeconds;
+                    }
+                    
+                    float height = size.Height - ((int)Heatings[h].Power * stepY);
+                    float from = x1 * stepX;
+                    float lenght = (x2 * stepX) - from;
+                    var r = new RectangleF(from, height, lenght, size.Height);
                     g.FillRectangle(Brushes.Lime, r);                    
-                }                
+                }
             }
         }
 
@@ -108,14 +116,14 @@
             DrawGrid(g);
             if (Measurements.Any())
             {
+                DrawHeatings(g);
+                DrawTemperatures(g);
+
                 Rectangle CurrentTemperatureBox = new Rectangle((int)g.ClipBounds.Width - 204, 2, 202, 42);
                 var format = new StringFormat() { Alignment = StringAlignment.Center };
                 g.FillRectangle(Brushes.Yellow, CurrentTemperatureBox);
                 g.DrawRectangle(new Pen(Brushes.Black, 2), CurrentTemperatureBox);
-
                 g.DrawString(Measurements.Last().Temperature + "°C", fontBig, Brushes.Red, CurrentTemperatureBox, format);
-                DrawHeatings(g);
-                DrawTemperatures(g);
             }
             g.Flush();
         }

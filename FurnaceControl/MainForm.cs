@@ -19,6 +19,32 @@
         public MainForm()
         {
             InitializeComponent();
+            D.Start = DateTime.Now.AddMinutes(-11);
+            D.Heatings.AddRange(new Heating[]
+            {
+                new Heating(Wattage.Power0kW, DateTime.Now.AddMinutes(-9)),
+                new Heating(Wattage.Power10kW, DateTime.Now.AddMinutes(-8)),
+                new Heating(Wattage.Power10kW, DateTime.Now.AddMinutes(-7)),
+                new Heating(Wattage.Power30kW, DateTime.Now.AddMinutes(-6)),
+                new Heating(Wattage.Power30kW, DateTime.Now.AddMinutes(-5)),
+                new Heating(Wattage.Power0kW, DateTime.Now.AddMinutes(-4)),
+                new Heating(Wattage.Power10kW, DateTime.Now.AddMinutes(-3)),
+                new Heating(Wattage.Power10kW, DateTime.Now.AddMinutes(-2)),
+                new Heating(Wattage.Power30kW, DateTime.Now.AddMinutes(-1)),                
+            });
+            D.Measurements.AddRange(new Measurement[] 
+            {
+                new Measurement( 25, DateTime.Now.AddMinutes(-9)),
+                new Measurement( 50, DateTime.Now.AddMinutes(-8)),
+                new Measurement(150, DateTime.Now.AddMinutes(-7)),
+                new Measurement(300, DateTime.Now.AddMinutes(-6)),
+                new Measurement(600, DateTime.Now.AddMinutes(-5)),
+                new Measurement(900, DateTime.Now.AddMinutes(-4)),
+                new Measurement(960, DateTime.Now.AddMinutes(-3)),
+                new Measurement(800, DateTime.Now.AddMinutes(-2)),
+                new Measurement(600, DateTime.Now.AddMinutes(-1)),
+                new Measurement(300, DateTime.Now.AddMinutes( 0)),
+            });
 
             F = new Furnace(L);
             F.PropertyChanged += new PropertyChangedEventHandler(UptateValues);
@@ -50,10 +76,11 @@
                 switch (e.PropertyName)
                 {
                     case "Halted":
-                        SetStartHaltButton(F.Halted);                        
+                        SetStartHaltButton(F.Halted);
                         break;
                     case "Start":
-                        SetStartHaltButton(F.Halted);                        
+                        SetStartHaltButton(F.Halted);
+                        D.Start = DateTime.Now;
                         break;
                     case "StartTime":
                         L.Add($"Start Time: [{F.StartTime}]");
