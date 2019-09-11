@@ -26,12 +26,12 @@ namespace FurnaceControl.Properties {
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("")]
-        public string Programs {
+        public string Plans {
             get {
-                return ((string)(this["Programs"]));
+                return ((string)(this["Plans"]));
             }
             set {
-                this["Programs"] = value;
+                this["Plans"] = value;
             }
         }
     }

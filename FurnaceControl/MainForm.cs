@@ -14,38 +14,11 @@
         private Furnace F;
         private Logger L = new Logger();
         private Display D = new Display();
-        private List<FiringProgram> P = new List<FiringProgram> ();
+        private List<FiringPlan> P = new List<FiringPlan> ();
         
         public MainForm()
         {
             InitializeComponent();
-            D.Start = DateTime.Now.AddMinutes(-11);
-            D.Heatings.AddRange(new Heating[]
-            {
-                new Heating(Wattage.Power0kW, DateTime.Now.AddMinutes(-9)),
-                new Heating(Wattage.Power10kW, DateTime.Now.AddMinutes(-8)),
-                new Heating(Wattage.Power10kW, DateTime.Now.AddMinutes(-7)),
-                new Heating(Wattage.Power30kW, DateTime.Now.AddMinutes(-6)),
-                new Heating(Wattage.Power30kW, DateTime.Now.AddMinutes(-5)),
-                new Heating(Wattage.Power0kW, DateTime.Now.AddMinutes(-4)),
-                new Heating(Wattage.Power10kW, DateTime.Now.AddMinutes(-3)),
-                new Heating(Wattage.Power10kW, DateTime.Now.AddMinutes(-2)),
-                new Heating(Wattage.Power30kW, DateTime.Now.AddMinutes(-1)),                
-            });
-            D.Measurements.AddRange(new Measurement[] 
-            {
-                new Measurement( 25, DateTime.Now.AddMinutes(-9)),
-                new Measurement( 50, DateTime.Now.AddMinutes(-8)),
-                new Measurement(150, DateTime.Now.AddMinutes(-7)),
-                new Measurement(300, DateTime.Now.AddMinutes(-6)),
-                new Measurement(600, DateTime.Now.AddMinutes(-5)),
-                new Measurement(900, DateTime.Now.AddMinutes(-4)),
-                new Measurement(960, DateTime.Now.AddMinutes(-3)),
-                new Measurement(800, DateTime.Now.AddMinutes(-2)),
-                new Measurement(600, DateTime.Now.AddMinutes(-1)),
-                new Measurement(300, DateTime.Now.AddMinutes( 0)),
-            });
-
             F = new Furnace(L);
             F.PropertyChanged += new PropertyChangedEventHandler(UptateValues);
             L.PropertyChanged += UpdateLogBox;
@@ -56,11 +29,14 @@
 
         private void LoadProgramsFromSettings()
         {
-            if(string.IsNullOrEmpty(Properties.Settings.Default.Programs)) { return; }
+            if(string.IsNullOrEmpty(Properties.Settings.Default.Plans))
+            {
+                return;
+            }
             try
             {
-                string[] programs = Properties.Settings.Default.Programs.Split(Environment.NewLine.ToArray());
-                P = programs.Select(x => FiringProgram.FromFurnaceString(x.Trim())).ToList();
+                string[] programs = Properties.Settings.Default.Plans.Split(Environment.NewLine.ToArray());
+                P = programs.Select(x => FiringPlan.FromFurnaceString(x.Trim())).ToList();
                 UpdateAvailablePrograms();
             }
             catch
@@ -105,7 +81,7 @@
                         L.Add($"Heating: {F.Heating}");
                         break;
                     case "Program":
-                        D.Program = F.Program.Blocks;
+                        D.Plan = F.Program;
                         L.Add($"Program set to: [{F.Program.Name}]");
                         break;
                     default:
@@ -147,10 +123,12 @@
             if (halted)
             {
                 StartHaltButton.Text = "START";
+                StartHaltButton.BackColor = Color.Lime;
             }
             else
             {
                 StartHaltButton.Text = "HALT";
+                StartHaltButton.BackColor = Color.Red;
             }
         }
 
@@ -260,7 +238,7 @@
         private void AddNewProgram(object sender, EventArgs e)
         {
             var ExistingNames = P?.Select(x => x.Name);
-            ProgramDesigner designer = new ProgramDesigner(new FiringProgram(), ExistingNames);
+            ProgramDesigner designer = new ProgramDesigner(new FiringPlan(), ExistingNames);
             
             if (designer.ShowDialog() == DialogResult.OK)
             {
@@ -278,7 +256,8 @@
 
         private void SaveBeforeClosing(object sender, FormClosingEventArgs e)
         {
-            Properties.Settings.Default.Programs = string.Join(Environment.NewLine, P.Select(x => x.ToFurnaceString()));
+            var plans = string.Join(Environment.NewLine, P.Select(x => x.ToFurnaceString()));
+            Properties.Settings.Default.Plans = plans;
             Properties.Settings.Default.Save();
         }
     }

@@ -6,10 +6,10 @@
 
     public partial class ProgramDesigner : Form
     {
-        public FiringProgram program { get; set; }
+        public FiringPlan program { get; set; }
         private IEnumerable<string> existingNames;
 
-        public ProgramDesigner(FiringProgram p, IEnumerable<string> names)
+        public ProgramDesigner(FiringPlan p, IEnumerable<string> names)
         {
             InitializeComponent();
 

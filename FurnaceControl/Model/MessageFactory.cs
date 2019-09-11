@@ -4,14 +4,9 @@ namespace FurnaceControl
 {
     public static class MessageFactory
     {
-        public static Message NoOp
-        {
-            get
-            {
-                return new Message(MessageType.NoOp);
-            }
-        }
-
+        /// <summary>
+        /// Get Current Temperature in Furnace
+        /// </summary>
         public static Message GetTemperature
         {
             get
@@ -20,6 +15,9 @@ namespace FurnaceControl
             }
         }
 
+        /// <summary>
+        /// Get Device Unique ID
+        /// </summary>
         public static Message HandShake
         {
             get
@@ -28,7 +26,10 @@ namespace FurnaceControl
             }
         }
 
-        public static Message PcStatus
+        /// <summary>
+        /// Get Program Counter Status
+        /// </summary>
+        public static Message GetPcStatus
         {
             get
             {
@@ -44,6 +45,9 @@ namespace FurnaceControl
             }
         }
 
+        /// <summary>
+        /// Get Current set Program from Furnace
+        /// </summary>
         public static Message GetCurProgram
         {
             get

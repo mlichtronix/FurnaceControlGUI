@@ -7,7 +7,7 @@ using System.Xml.Serialization;
 namespace FurnaceControl
 {
     [Serializable]
-    public class FiringProgram
+    public class FiringPlan
     {
         /// <summary>
         /// Program Name
@@ -28,9 +28,9 @@ namespace FurnaceControl
         public ProgramBlock[] Blocks { get; set; } = new ProgramBlock[] { };
 
         /// <summary>
-        /// Creates instance of <see cref="FiringProgram"/>
+        /// Creates instance of <see cref="FiringPlan"/>
         /// </summary>
-        public FiringProgram() { }
+        public FiringPlan() { }
 
         public string ToFurnaceString()
         {
@@ -38,9 +38,9 @@ namespace FurnaceControl
             return $"{Name}|{string.Join(";", Blocks.Select(x => x.ToFurnaceString()))}";
         }
 
-        internal static FiringProgram FromFurnaceString(string data)
+        internal static FiringPlan FromFurnaceString(string data)
         {
-            var program = new FiringProgram();
+            var program = new FiringPlan();
             var nameBlocks = data.Split('|');            
             var triplets = nameBlocks[1].Split(';');
             List<ProgramBlock> blocks = new List<ProgramBlock>();

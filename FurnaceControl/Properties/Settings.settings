@@ -2,7 +2,7 @@
 <SettingsFile xmlns="http://schemas.microsoft.com/VisualStudio/2004/01/settings" CurrentProfile="(Default)" GeneratedClassNamespace="FurnaceControl.Properties" GeneratedClassName="Settings">
   <Profiles />
   <Settings>
-    <Setting Name="Programs" Type="System.String" Scope="User">
+    <Setting Name="Plans" Type="System.String" Scope="User">
       <Value Profile="(Default)" />
     </Setting>
   </Settings>

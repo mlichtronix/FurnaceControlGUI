@@ -11,10 +11,10 @@
         private static readonly float MaxTemp = 1400.0f;        // Maximal Temperature that furnace can handle        
         private static readonly Font fontBig = new Font(FontFamily.GenericMonospace, 25, FontStyle.Bold);
         private static readonly Font fontSmall = new Font(FontFamily.GenericMonospace, 10, FontStyle.Bold);
-
+        private static readonly StringFormat center = new StringFormat() { Alignment = StringAlignment.Center };
         // Properties
         public List<Measurement> Measurements { get; set; } = new List<Measurement>();
-        public ProgramBlock[] Program { get; set; }
+        public FiringPlan Plan { get; set; } = new FiringPlan();
         public List<Heating> Heatings { get; set; } = new List<Heating>();
         public bool SmokeStackClosed { get; set; } = false;
         public int ProgramCounter { get; set; } = -1;
@@ -41,11 +41,29 @@
                     GraphPoints.Add(new PointF(x * stepX, size.Height - (m.Temperature * stepY)));
                 }
                 var LinePen = new Pen(Brushes.Red, 3);
-                g.DrawCurve(LinePen, GraphPoints.ToArray());                
+                g.DrawLines(LinePen, GraphPoints.ToArray());
                 var lp = GraphPoints.Last();
                 g.FillEllipse(Brushes.Red, new RectangleF(lp.X - 5, lp.Y - 5, 10, 10));
             }
         }
+
+        private void DrawProgram(Graphics g)
+        {
+            if (Plan == null) { return; }
+            int marginLeft = 70;
+            g.DrawString($"{Plan.Name}", fontBig, Brushes.Black, new Point(marginLeft, 10));
+            for (int i = 0; Plan.Blocks != null && i < Plan.Blocks.Count(); i++)
+            {
+                var block = Plan.Blocks[i];
+                string currentBlock = $"{block.TargetTemperature.ToString().PadLeft(4,' ')}°C {block.TemperingDuration.ToString().PadLeft(3, ' ')}min {(int)block.PowerDrain}kW";
+                if (ProgramCounter == i)
+                {
+                    currentBlock += "<<";
+                }
+                g.DrawString(currentBlock, fontSmall, Brushes.Black, new PointF(marginLeft, 13 + fontBig.Height + (i * (fontSmall.Height + 3))));
+            }
+        }
+             
 
         private void DrawHeatings(Graphics g)
         {
@@ -117,14 +135,15 @@
             if (Measurements.Any())
             {
                 DrawHeatings(g);
-                DrawTemperatures(g);
+                DrawTemperatures(g);                
 
                 Rectangle CurrentTemperatureBox = new Rectangle((int)g.ClipBounds.Width - 204, 2, 202, 42);
-                var format = new StringFormat() { Alignment = StringAlignment.Center };
+                
                 g.FillRectangle(Brushes.Yellow, CurrentTemperatureBox);
                 g.DrawRectangle(new Pen(Brushes.Black, 2), CurrentTemperatureBox);
-                g.DrawString(Measurements.Last().Temperature + "°C", fontBig, Brushes.Red, CurrentTemperatureBox, format);
+                g.DrawString(Measurements.Last().Temperature + "°C", fontBig, Brushes.Red, CurrentTemperatureBox, center);                
             }
+            DrawProgram(g);
             g.Flush();
         }
     }

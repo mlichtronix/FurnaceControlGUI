@@ -62,7 +62,7 @@
                 msgData = data;
             }
 
-            return new Message(type, msgData)
+            return new Message(type, msgData.Trim())
             {
                 Received = received,
             };

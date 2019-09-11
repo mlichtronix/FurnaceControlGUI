@@ -14,7 +14,7 @@
         private bool halted = true;
         private int temperature = -1;
         private int programCounter = -1;        
-        private FiringProgram program = null;
+        private FiringPlan program = null;
         private Wattage heating = Wattage.Power0kW;
         private SerialStatus status = SerialStatus.Disconnected;
         private DateTime startTime = DateTime.Now;
@@ -69,7 +69,15 @@
             }
         }
 
-        public FiringProgram Program
+        private void SyncCurrentStatus()
+        {
+            SendMessage(MessageFactory.HandShake);
+            SendMessage(MessageFactory.GetTemperature);
+            SendMessage(MessageFactory.GetCurProgram);
+            SendMessage(MessageFactory.GetPcStatus);
+        }
+
+        public FiringPlan Program
         {
             get { return program; }
             set
@@ -86,6 +94,7 @@
             {
                 if (programCounter == value) { return; }
                 programCounter = value;
+                
                 OnPropertyChanged("ProgramCounter");
             }
         }
@@ -129,7 +138,10 @@
             switch (msg.Type)
             {
                 case MessageType.HandShake:         // 200
-                    Status = SerialStatus.Connected;
+                    if (msg.Data == Responses.DeviceID)
+                    {
+                        Status = SerialStatus.Connected;
+                    }
                     break;
                 case MessageType.SetTime:           // 300
                     L.Add($"Furnace Time: [{ParseTime(msg.Data)}]");
@@ -177,7 +189,7 @@
         {
             try
             {
-                Program = FiringProgram.FromFurnaceString(data);
+                Program = FiringPlan.FromFurnaceString(data);
             }
             catch (Exception ex)
             {
@@ -213,8 +225,8 @@
                 {
                     comport.Open();
                     comport.ReadExisting(); // Clear previous communication
-                }
-                SendMessage(MessageFactory.HandShake);
+                }                
+                SyncCurrentStatus();
             }
             catch
             {
@@ -226,7 +238,7 @@
         public void UpdateStatus()
         {
             SendMessage(MessageFactory.GetTemperature);
-            SendMessage(MessageFactory.PcStatus);
+            SendMessage(MessageFactory.GetPcStatus);
         }
 
         public void DisconnectDevice()
@@ -245,7 +257,7 @@
             SendMessage(new Message(MessageType.SetTime, t.ToFurnaceString()));
         }
 
-        public void SetCustomProgram(FiringProgram p)
+        public void SetCustomProgram(FiringPlan p)
         {
             SendMessage(new Message(MessageType.SetProgram, p.ToFurnaceString()));
         }
