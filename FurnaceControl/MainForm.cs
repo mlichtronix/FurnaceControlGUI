@@ -1,13 +1,13 @@
 ﻿namespace FurnaceControl
 {
     using System;
+    using System.Linq;
     using System.Drawing;
     using System.IO.Ports;
     using System.Windows.Forms;
     using System.ComponentModel;
     using System.Drawing.Drawing2D;
     using System.Collections.Generic;
-    using System.Linq;
 
     public partial class MainForm : Form
     {
@@ -159,7 +159,7 @@
                 switch (F.Status)
                 {
                     case SerialStatus.Disconnected:
-                        FurnaceGroup.Enabled = false;
+                        StartHaltButton.Enabled = false;
                         ConnectButton.Text = "Connect";
                         L.Add("Device is disconnected.");
                         GraphRefresh.Stop();
@@ -167,7 +167,7 @@
                         break;
 
                     case SerialStatus.Connected:
-                        FurnaceGroup.Enabled = true;                        
+                        StartHaltButton.Enabled = true;                        
                         ConnectButton.Text = "Disconnect";
                         L.Add("Device is connected.");
                         D.Start = DateTime.Now;
@@ -177,13 +177,13 @@
                         break;
 
                     case SerialStatus.NotResponding:
-                        FurnaceGroup.Enabled = false;
+                        StartHaltButton.Enabled = false;
                         L.Add("Device is not responding!");
                         DeviceBox.BackColor = Color.Orange;
                         break;
 
                     case SerialStatus.WrongProtocol:
-                        FurnaceGroup.Enabled = false;
+                        StartHaltButton.Enabled = false;
                         L.Add("Device is not compatible!");
                         F.DisconnectDevice();
                         DeviceBox.BackColor = Color.Red;
@@ -217,9 +217,9 @@
         {
             if (F.Halted)
             {
-                if (ProgramSelector.SelectedIndex != -1)
+                if (PlanSelector.SelectedIndex != -1)
                 {
-                    F.SetCustomProgram(P[ProgramSelector.SelectedIndex]);
+                    F.SetCustomProgram(P[PlanSelector.SelectedIndex]);
                     F.SetTime(DateTime.Now);
                     var v = SchedulePicker.Value;
                     F.Start(SchedulePicker.Value);
@@ -237,28 +237,44 @@
 
         private void AddNewProgram(object sender, EventArgs e)
         {
-            var ExistingNames = P?.Select(x => x.Name);
-            ProgramDesigner designer = new ProgramDesigner(new FiringPlan(), ExistingNames);
-            
+            PlanDesigner designer = new PlanDesigner(new FiringPlan(), GetExistingPlanNames());            
             if (designer.ShowDialog() == DialogResult.OK)
             {
-                P.Add(designer.program);
-            }
-            UpdateAvailablePrograms();
+                P.Add(designer.plan);
+                UpdateAvailablePrograms();
+            }            
         }
 
         private void UpdateAvailablePrograms()
         {
-            ProgramSelector.Items.Clear();
-            ProgramSelector.Items.AddRange(P.ToArray());
-            StartHaltButton.Enabled = ProgramSelector.Items != null;
-        }
+            // Update GUI
+            PlanSelector.Items.Clear();
+            PlanSelector.Items.AddRange(P.ToArray());
+            StartHaltButton.Enabled = PlanSelector.Items != null;
 
-        private void SaveBeforeClosing(object sender, FormClosingEventArgs e)
-        {
+            // Save Settings
             var plans = string.Join(Environment.NewLine, P.Select(x => x.ToFurnaceString()));
             Properties.Settings.Default.Plans = plans;
             Properties.Settings.Default.Save();
+        }
+
+        private void EditSelectedPlan(object sender, EventArgs e)
+        {
+            var index = PlanSelector.SelectedIndex;
+            if(index > -1)
+            {
+                var designer = new PlanDesigner(P[index], GetExistingPlanNames());
+                if (designer.ShowDialog() == DialogResult.OK)
+                {
+                    P[index] = designer.plan;
+                    UpdateAvailablePrograms();
+                }
+            }
+        }
+
+        private string[] GetExistingPlanNames()
+        {
+            return P?.Select(x => x.Name).ToArray();
         }
     }
 }

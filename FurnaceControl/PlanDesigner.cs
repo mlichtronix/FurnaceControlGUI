@@ -4,21 +4,21 @@
     using System.Windows.Forms;
     using System.Collections.Generic;
 
-    public partial class ProgramDesigner : Form
+    public partial class PlanDesigner : Form
     {
-        public FiringPlan program { get; set; }
+        public FiringPlan plan { get; set; }
         private IEnumerable<string> existingNames;
 
-        public ProgramDesigner(FiringPlan p, IEnumerable<string> names)
+        public PlanDesigner(FiringPlan p, IEnumerable<string> names)
         {
             InitializeComponent();
 
-            program = p;
+            plan = p;
             existingNames = names;
-            NameBox.Text = program.Name;
-            foreach (var block in program.Blocks)
+            NameBox.Text = plan.Name;
+            foreach (var block in plan.Blocks)
             {
-                ProgramValues.Rows.Add(block.TargetTemperature, block.TemperingDuration, block.PowerDrain);
+                ProgramValues.Rows.Add(block.TargetTemperature, block.TemperingDuration, ((int)block.PowerDrain).ToString());
             }
         }
 
@@ -32,8 +32,8 @@
                 int w = int.Parse(ProgramValues[2, r].Value.ToString());
                 blocks.Add(new ProgramBlock(c, d, (Wattage)w));
             }
-            program.Name = NameBox.Text.Trim();
-            program.Blocks = blocks.ToArray();
+            plan.Name = NameBox.Text.Trim();
+            plan.Blocks = blocks.ToArray();
             DialogResult = DialogResult.OK;
             Close();
         }

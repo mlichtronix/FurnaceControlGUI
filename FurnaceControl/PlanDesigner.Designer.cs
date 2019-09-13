@@ -1,6 +1,6 @@
 ﻿namespace FurnaceControl
 {
-    partial class ProgramDesigner
+    partial class PlanDesigner
     {
         /// <summary>
         /// Required designer variable.
@@ -36,13 +36,13 @@
             this.NameBox = new System.Windows.Forms.TextBox();
             this.groupBox2 = new System.Windows.Forms.GroupBox();
             this.ProgramValues = new System.Windows.Forms.DataGridView();
+            this.Temperature = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.Duration = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.Wattage = new System.Windows.Forms.DataGridViewComboBoxColumn();
             this.panel1 = new System.Windows.Forms.Panel();
             this.button2 = new System.Windows.Forms.Button();
             this.button1 = new System.Windows.Forms.Button();
             this.programBlockBindingSource = new System.Windows.Forms.BindingSource(this.components);
-            this.Temperature = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.Duration = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.Wattage = new System.Windows.Forms.DataGridViewComboBoxColumn();
             this.groupBox1.SuspendLayout();
             this.groupBox2.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.ProgramValues)).BeginInit();
@@ -108,6 +108,35 @@
             this.ProgramValues.Size = new System.Drawing.Size(440, 476);
             this.ProgramValues.TabIndex = 1;
             // 
+            // Temperature
+            // 
+            this.Temperature.DataPropertyName = "Temperature";
+            dataGridViewCellStyle1.Format = "N0";
+            dataGridViewCellStyle1.NullValue = null;
+            this.Temperature.DefaultCellStyle = dataGridViewCellStyle1;
+            this.Temperature.HeaderText = "Temperature [°C]";
+            this.Temperature.MaxInputLength = 4;
+            this.Temperature.Name = "Temperature";
+            // 
+            // Duration
+            // 
+            this.Duration.DataPropertyName = "Duration";
+            dataGridViewCellStyle2.Format = "N0";
+            dataGridViewCellStyle2.NullValue = null;
+            this.Duration.DefaultCellStyle = dataGridViewCellStyle2;
+            this.Duration.HeaderText = "Duration [min]";
+            this.Duration.MaxInputLength = 4;
+            this.Duration.Name = "Duration";
+            // 
+            // Wattage
+            // 
+            this.Wattage.DataPropertyName = "Wattage";
+            this.Wattage.HeaderText = "Wattage [kW]";
+            this.Wattage.Items.AddRange(new object[] {
+            "10",
+            "30"});
+            this.Wattage.Name = "Wattage";
+            // 
             // panel1
             // 
             this.panel1.Controls.Add(this.button2);
@@ -144,36 +173,7 @@
             // 
             this.programBlockBindingSource.DataSource = typeof(FurnaceControl.ProgramBlock);
             // 
-            // Temperature
-            // 
-            this.Temperature.DataPropertyName = "Temperature";
-            dataGridViewCellStyle1.Format = "N0";
-            dataGridViewCellStyle1.NullValue = null;
-            this.Temperature.DefaultCellStyle = dataGridViewCellStyle1;
-            this.Temperature.HeaderText = "Temperature [°C]";
-            this.Temperature.MaxInputLength = 4;
-            this.Temperature.Name = "Temperature";
-            // 
-            // Duration
-            // 
-            this.Duration.DataPropertyName = "Duration";
-            dataGridViewCellStyle2.Format = "N0";
-            dataGridViewCellStyle2.NullValue = null;
-            this.Duration.DefaultCellStyle = dataGridViewCellStyle2;
-            this.Duration.HeaderText = "Duration [min]";
-            this.Duration.MaxInputLength = 4;
-            this.Duration.Name = "Duration";
-            // 
-            // Wattage
-            // 
-            this.Wattage.DataPropertyName = "Wattage";
-            this.Wattage.HeaderText = "Wattage [kW]";
-            this.Wattage.Items.AddRange(new object[] {
-            "10",
-            "30"});
-            this.Wattage.Name = "Wattage";
-            // 
-            // ProgramDesigner
+            // PlanDesigner
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
@@ -181,7 +181,7 @@
             this.Controls.Add(this.groupBox2);
             this.Controls.Add(this.panel1);
             this.Controls.Add(this.groupBox1);
-            this.Name = "ProgramDesigner";
+            this.Name = "PlanDesigner";
             this.Padding = new System.Windows.Forms.Padding(10, 10, 10, 3);
             this.ShowIcon = false;
             this.Text = "Program designer";
