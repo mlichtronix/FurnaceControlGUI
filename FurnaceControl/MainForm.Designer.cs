@@ -212,6 +212,7 @@
             this.button4.TabIndex = 8;
             this.button4.Text = "X";
             this.button4.UseVisualStyleBackColor = true;
+            this.button4.Click += new System.EventHandler(this.RemoveSelectedPlan);
             // 
             // button3
             // 
@@ -248,6 +249,7 @@
             // StartHaltButton
             // 
             this.StartHaltButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
+            this.StartHaltButton.Enabled = false;
             this.StartHaltButton.Location = new System.Drawing.Point(284, 61);
             this.StartHaltButton.Name = "StartHaltButton";
             this.StartHaltButton.Size = new System.Drawing.Size(75, 23);

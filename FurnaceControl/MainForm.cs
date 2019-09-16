@@ -35,7 +35,7 @@
             }
             try
             {
-                string[] programs = Properties.Settings.Default.Plans.Split(Environment.NewLine.ToArray());
+                string[] programs = Properties.Settings.Default.Plans.Split(Environment.NewLine.ToArray(), StringSplitOptions.RemoveEmptyEntries);
                 P = programs.Select(x => FiringPlan.FromFurnaceString(x.Trim())).ToList();
                 UpdateAvailablePrograms();
             }
@@ -242,17 +242,22 @@
             {
                 P.Add(designer.plan);
                 UpdateAvailablePrograms();
+                SaveSettings();
             }            
         }
 
         private void UpdateAvailablePrograms()
         {
             // Update GUI
+            int index = PlanSelector.SelectedIndex;
             PlanSelector.Items.Clear();
             PlanSelector.Items.AddRange(P.ToArray());
-            StartHaltButton.Enabled = PlanSelector.Items != null;
+            PlanSelector.SelectedIndex = index < PlanSelector.Items.Count ? index : -1;
+            StartHaltButton.Enabled = PlanSelector.Items != null && F.Status == SerialStatus.Connected;
+        }
 
-            // Save Settings
+        private void SaveSettings()
+        {
             var plans = string.Join(Environment.NewLine, P.Select(x => x.ToFurnaceString()));
             Properties.Settings.Default.Plans = plans;
             Properties.Settings.Default.Save();
@@ -261,14 +266,27 @@
         private void EditSelectedPlan(object sender, EventArgs e)
         {
             var index = PlanSelector.SelectedIndex;
-            if(index > -1)
+            if (index == -1) { return; }
+
+            var designer = new PlanDesigner(P[index], GetExistingPlanNames());
+            if (designer.ShowDialog() == DialogResult.OK)
             {
-                var designer = new PlanDesigner(P[index], GetExistingPlanNames());
-                if (designer.ShowDialog() == DialogResult.OK)
-                {
-                    P[index] = designer.plan;
-                    UpdateAvailablePrograms();
-                }
+                P[index] = designer.plan;
+                UpdateAvailablePrograms();
+                SaveSettings();
+            }
+        }
+
+        private void RemoveSelectedPlan(object sender, EventArgs e)
+        {
+            int index = PlanSelector.SelectedIndex;
+            if (index == -1) { return; }
+
+            if (MessageBox.Show($"Do you really want to remove [{P[index].Name}] plan?", "Confirm", MessageBoxButtons.YesNoCancel) == DialogResult.Yes)
+            {
+                P.RemoveAt(index);
+                UpdateAvailablePrograms();
+                SaveSettings();
             }
         }
 

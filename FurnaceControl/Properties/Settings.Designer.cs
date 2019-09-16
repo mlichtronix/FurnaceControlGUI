@@ -25,7 +25,13 @@ namespace FurnaceControl.Properties {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        [global::System.Configuration.DefaultSettingValueAttribute(@"Prezah - Normal (960)|50*30*10;100*30*10;150*30*10;200*30*10;250*30*10;300*30*10;350*30*10;960*30*30
+Prezah - Hrube kusy (960)|50*30*10;100*30*10;150*30*10;200*30*10;250*30*10;300*30*10;350*30*10;400*30*10;450*30*10;500*30*10;550*30*30;600*30*30;650*30*30;700*30*30;960*30*30
+Prezah - Dosusanie (960)|50*300*10;100*240*10;150*120*10;200*60*10;250*30*10;300*30*10;350*30*10;960*30*30
+Glazura - Kachlice (960)|550*0*10;960*30*30
+Glazura - Beluj (980)|550*0*10;980*30*30
+Glazura - Hrube kusy (960)|50*30*10;100*30*10;150*30*10;200*30*10;250*30*10;300*30*10;350*30*10;400*30*10;450*30*10;500*30*10;550*30*30;600*30*30;650*30*30;700*30*30;960*30*30
+Glazura - Kamenia hrube (1200)|400*30*30;450*30*30;500*30*30;550*30*30;600*30*30;650*30*30;700*30*30;1200*30*30")]
         public string Plans {
             get {
                 return ((string)(this["Plans"]));

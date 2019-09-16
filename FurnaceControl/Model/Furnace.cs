@@ -3,7 +3,6 @@
     using System;
     using System.IO.Ports;
     using System.ComponentModel;
-    using System.Globalization;
 
     public partial class Furnace : INotifyPropertyChanged
     {
@@ -144,7 +143,7 @@
                     }
                     break;
                 case MessageType.SetTime:           // 300
-                    L.Add($"Furnace Time: [{ParseTime(msg.Data)}]");
+                    L.Add($"Furnace Time: [{Extensions.DateFromFurnaceString(msg.Data)}]");
                     break;
                 case MessageType.GetCurTemp:        // 400
                     Temperature = int.Parse(msg.Data);
@@ -160,7 +159,7 @@
                     break;
                 case MessageType.Start:             // 700
                     Halted = false;
-                    StartTime = ParseTime(msg.Data);
+                    StartTime = Extensions.DateFromFurnaceString(msg.Data);
                     break;
                 case MessageType.CloseSmokeAlert:   // 800
                     OnPropertyChanged(msg.Type.ToString());
@@ -180,11 +179,6 @@
             }
         }
 
-        private DateTime ParseTime(string t)
-        {
-            return DateTime.ParseExact(t.Trim(), Extensions.DateTimeFormat, CultureInfo.InvariantCulture);
-        }
-
         private void ParseProgram(string data)
         {
             try
@@ -200,8 +194,15 @@
         private void HandleReceivedMessage(object sender, SerialDataReceivedEventArgs e)
         {
             var time = DateTime.Now;
-            string content = ((SerialPort)sender).ReadLine();
-            ProcessReceivedMessage(Message.FromStringAndDate(content, time));
+            try
+            {
+                string content = ((SerialPort)sender).ReadLine();
+                ProcessReceivedMessage(Message.FromStringAndDate(content, time));
+            }
+            catch (TimeoutException ex)
+            {
+                L.Add(ex.Message);
+            }
         }
 
         // Public Methods
@@ -212,6 +213,8 @@
 
         public void ConnectDevice(string portName)
         {
+            if (string.IsNullOrEmpty(portName)) { return; }
+
             comport = new SerialPort(portName, 9600)
             {
                 Encoding = System.Text.Encoding.ASCII,
