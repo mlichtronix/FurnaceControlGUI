@@ -62,7 +62,9 @@
                         L.Add($"Start Time: [{F.StartTime}]");
                         break;
                     case "CloseSmokeAlert":
-                        L.Add("Please close smokestack!");
+                        string msg = "Please close smokestack!";
+                        L.Add(msg);
+                        MessageBox.Show(msg, "Alert", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                         break;
                     case "Status":
                         UpdateStatus();
@@ -70,7 +72,7 @@
                     case "Temperature":
                         var m = new Measurement(F.Temperature, DateTime.Now);
                         D.Measurements.Add(m);
-                        L.Add($"Temperature update: {m.Temperature} °C");
+                        // L.Add($"Temperature update: {m.Temperature} °C");
                         break;
                     case "ProgramCounter":
                         D.ProgramCounter = F.ProgramCounter;

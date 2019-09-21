@@ -184,6 +184,7 @@
             this.Name = "PlanDesigner";
             this.Padding = new System.Windows.Forms.Padding(10, 10, 10, 3);
             this.ShowIcon = false;
+            this.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
             this.Text = "Program designer";
             this.groupBox1.ResumeLayout(false);
             this.groupBox1.PerformLayout();

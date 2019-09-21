@@ -31,7 +31,8 @@
                 var size = g.ClipBounds.Size;
                 DateTime first = Start;
                 DateTime last = DateTime.Now;
-                float stepX = (size.Width - 10) / (float)(last - first).TotalSeconds;     // (+1.0f = Offset to get better view and to get better precission)
+                float duration = (float)(last - first).TotalSeconds;
+                float stepX = size.Width / duration;
                 float stepY = size.Height / (MaxTemp * 1.0f);
 
                 List<PointF> GraphPoints = new List<PointF>();
@@ -71,7 +72,7 @@
             {
                 var size = g.ClipBounds.Size;
                 DateTime last = DateTime.Now;
-                float stepX = (size.Width - 10) / (float)(last - Start).TotalSeconds;     // (+1.0f = Offset to get better view and to get better precission)
+                float stepX = size.Width / (float)(last - Start).TotalSeconds;
                 float stepY = (size.Height / MaxTemp) * 10;
 
                 for (int h = 0; h < Heatings.Count; h++)

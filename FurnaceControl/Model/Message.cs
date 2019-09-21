@@ -5,9 +5,20 @@
 
     public class Message
     {
-        public static readonly string DataSeparator = ":";          // Separator between MessageTypeCode and Message content
-        public static readonly string ThreeNumbers = "\\d{3}";      // Message TypeCode
-        public static readonly string DataString = ".*$";           // Message content (all until end of line)
+        /// <summary>
+        /// Separator between MessageTypeCode and Message content: "\\:"
+        /// </summary>
+        public static readonly string DataSeparator = ":";
+
+        /// <summary>
+        /// Message TypeCode: "(200|300|400|500|600|650|700|800|900|990|995|999)"
+        /// </summary>
+        public static readonly string ThreeNumbers = "(200|300|400|500|600|650|700|800|900|990|995|999)";
+
+        /// <summary>
+        /// Message content (all until end of line): ".*$"
+        /// </summary>
+        public static readonly string DataString = ".*$";
 
         /// <summary>
         /// Message Type
@@ -49,12 +60,14 @@
             MessageType type = MessageType.NoOp;
             string msgData = string.Empty;
 
-            Regex messageRgx = new Regex($"{ThreeNumbers}{DataSeparator}{DataString}");
-            if (messageRgx.Match(data).Success)
-            {                
-                int typeValue = int.Parse(data.Substring(0, 3).Trim());
+            Regex messageRgx = new Regex($"{ThreeNumbers}\\{DataSeparator}{DataString}");
+            Match msgRegex = messageRgx.Match(data);
+            if (msgRegex.Success)
+            {
+                string rgxData = msgRegex.Value.Trim();
+                int typeValue = int.Parse(rgxData.Substring(0, 3));
                 type = (Enum.IsDefined(typeof(MessageType), typeValue)) ? (MessageType)typeValue : MessageType.Invalid;
-                if (data.Length > 4) { msgData = data.Substring(4); }
+                if (rgxData.Length > 4) { msgData = rgxData.Substring(4).Trim(); }
             }
             else
             {
@@ -62,7 +75,7 @@
                 msgData = data;
             }
 
-            return new Message(type, msgData.Trim())
+            return new Message(type, msgData)
             {
                 Received = received,
             };

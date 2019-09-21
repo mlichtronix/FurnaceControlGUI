@@ -93,7 +93,7 @@
             {
                 if (programCounter == value) { return; }
                 programCounter = value;
-                
+                Halted = programCounter == -1;
                 OnPropertyChanged("ProgramCounter");
             }
         }
