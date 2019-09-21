@@ -116,15 +116,8 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <None Include="src\arduino folders read me.txt">
-    </None>
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="ProgramBlock.h" />
+    <ClInclude Include="stddef.h" />
     <ClInclude Include="__vm\.FurnaceController.vsarduino.h" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClCompile Include="ProgramBlock.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

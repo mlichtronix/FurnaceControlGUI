@@ -60,8 +60,25 @@ int treshold = 5;             // Maximal Temperature variance from target
 int wattage = 0;              // Heating Wattage
 int button = 0;               // Pressed button
 
-// Headers
+class ProgramBlock
+{
+public:
+	int temp = 0;
+	int duration = 0;
+	int drain = 10;
+	ProgramBlock();
+	~ProgramBlock();
+};
+ProgramBlock::ProgramBlock() 
+{
+}
 
+ProgramBlock::~ProgramBlock() 
+{
+	~temp;
+	~duration;
+	~drain;
+}
 
 class FiringProgram
 {
@@ -154,6 +171,7 @@ bool isNumber(String data)
 	{
 		if (!isDigit(data[i]))
 		{
+			Serial.println("Not a number:[" + data + "] @" + String(i));
 			return false;
 		}
 	}
@@ -225,10 +243,17 @@ bool ParseProgram(String data)
 	{
 		LinkedList<String> values = Split(blocksStr.get(i), '*');
 		ProgramBlock block;
-		block.temp = values.get(0).toInt();
-		block.duration = values.get(1).toInt();
-		block.drain = values.get(2).toInt();
-		blocks->add(block);
+		if (isNumber(values.get(0)) && isNumber(values.get(1)) && isNumber(values.get(2))) 
+		{
+			block.temp = values.get(0).toInt();
+			block.duration = values.get(1).toInt();
+			block.drain = values.get(2).toInt();
+			blocks->add(block);
+		}
+		else
+		{
+			return false;
+		}
 	}
 	Program = blocks;
 	ProgramName = progName;
