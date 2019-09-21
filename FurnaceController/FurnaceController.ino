@@ -1,7 +1,7 @@
 /*
  Name:		FurnaceController.ino
  Created:	9/13/2019 2:22:25 PM
- Author:	marti
+ Author:	Mlichtronix
 */
 
 // Includes -----------------------
@@ -14,7 +14,7 @@
 
 // Definitions ---------------------
 #define I2C_ADDRESS (0x67)      // Adress for MCP9600 Thermocouple Breakout module
-#define BAUDS 9600
+#define BAUDS 115200
 
 // Message Type Codes --------------
 const int NoOp				= 100;
@@ -69,6 +69,7 @@ public:
 	ProgramBlock();
 	~ProgramBlock();
 };
+
 ProgramBlock::ProgramBlock() 
 {
 }
@@ -131,7 +132,7 @@ void setup()
 	Serial.begin(BAUDS);
 	if (!mcp.begin())
 	{
-		SendMessage(CreateMessage(Error, "Sensor MCP9600 not found!"));
+		SendMessage(Error, "Sensor MCP9600 not found!");
 		while (1);
 	}
 	mcp.setADCresolution(MCP9600_ADCRESOLUTION_18);
@@ -171,7 +172,6 @@ bool isNumber(String data)
 	{
 		if (!isDigit(data[i]))
 		{
-			Serial.println("Not a number:[" + data + "] @" + String(i));
 			return false;
 		}
 	}
@@ -199,11 +199,6 @@ String ProgramToString()
 		}
 	}
 	return nameDate + blocks;
-}
-
-String CreateMessage(int t, String p)
-{
-	return String(t) + ":" + p;
 }
 
 LinkedList<String> Split(String data, char delimiter)
@@ -239,12 +234,17 @@ bool ParseProgram(String data)
 	String progName = parts.get(0);
 	LinkedList<String> blocksStr = Split(parts.get(1), ';');
 	LinkedList<ProgramBlock> *blocks = new LinkedList<ProgramBlock>();
+	
 	for (int i = 0; i < blocksStr.size(); i++)
 	{
 		LinkedList<String> values = Split(blocksStr.get(i), '*');
-		ProgramBlock block;
-		if (isNumber(values.get(0)) && isNumber(values.get(1)) && isNumber(values.get(2))) 
+
+		if (values.size() == 3 &&
+			isNumber(values.get(0)) &&
+			isNumber(values.get(1)) &&
+			isNumber(values.get(2))) 
 		{
+			ProgramBlock block;
 			block.temp = values.get(0).toInt();
 			block.duration = values.get(1).toInt();
 			block.drain = values.get(2).toInt();
@@ -267,23 +267,25 @@ void ReadSerial()
 		String message = Serial.readStringUntil('\n');
 		if (message.length() >= 4)
 		{
-			String typeStr = message.substring(0, 3);
+			String typeStr = message.substring(0, 3);			
 			String dataStr = message.substring(4);
+			typeStr.trim();
+			dataStr.trim();
 			if (isNumber(typeStr))
 			{
 				Response(typeStr.toInt(), dataStr);
 				return;
 			}
 		}
-		SendMessage(CreateMessage(Invalid, message));
+		SendMessage(Invalid, message);
 	}
 }
 
-void SendMessage(String msg)
+void SendMessage(int t, String msg)
 {
 	if (Serial)
 	{
-		Serial.println(msg);
+		Serial.println(String(t) + ":" + msg);
 	}
 }
 
@@ -292,53 +294,53 @@ void Response(int t, String p)
 	switch (t)
 	{
 	case HandShake: // 200
-	  // Return ID of this device according official manufacturer documentation
-		SendMessage(CreateMessage(t, "CEP-0.5-1150"));
+		// Return ID of this device according official manufacturer documentation
+		SendMessage(t, "CEP-0.5-1150");
 		return;
 
 	case Start: // 700
 		halted = false;
 		programCounter = -1;
 		ScheduleTime = DateFromString(p);
-		SendMessage(CreateMessage(t, DateToString(ScheduleTime)));
+		SendMessage(t, DateToString(ScheduleTime));
 		return;
 
 	case SetTime: // 300
 		CurrentTime = DateFromString(p);
-		SendMessage(CreateMessage(t, DateToString(CurrentTime)));
+		SendMessage(t, DateToString(CurrentTime));
 		return;
 
 	case GetCurTemperature: // 400
-	  // Return Current Temperature in Furnace
-		SendMessage(CreateMessage(t, String(currentTemp)));
+		// Return Current Temperature in Furnace
+		SendMessage(t, String(currentTemp));
 		return;
 
 	case GetPcSatus:  // 500
-	  // Return Current Program Block number
-		SendMessage(CreateMessage(t, String(programCounter)));
+		// Return Current Program Block number
+		SendMessage(t, String(programCounter));
 		return;
 
 	case GetCurrentProgram: // 600
-		SendMessage(CreateMessage(t, ProgramToString()));
+		SendMessage(t, ProgramToString());
 		return;
 
 	case SetProgram:  // 650
 		if (ParseProgram(p))
 		{
-			SendMessage(CreateMessage(t, "Program Set"));
+			SendMessage(t, "Program Set");
 		}
 		else
 		{
-			SendMessage(CreateMessage(Error, "Canot parse Program!"));
+			SendMessage(Error, "Canot parse Program!");
 		}
 		return;
 
 	case Halt:  // 999
-	  // Stop any activity and reset all settings to default position
+		// Stop any activity and reset all settings to default position
 		HaltAndReset();
 		return;
 	}
-	SendMessage(CreateMessage(Invalid, "Unsupported command! [" + String(t) + ":" + p + "]"));
+	SendMessage(Invalid, "Unsupported command! [" + String(t) + ":" + p + "]");
 }
 
 void HaltAndReset()
@@ -352,7 +354,7 @@ void HaltAndReset()
 	maxWattage = 10;
 	targetTemp = 0;
 	wattage = 0;
-	SendMessage(CreateMessage(Halt, "Halted"));
+	SendMessage(Halt, "Halted");
 }
 
 void ReadTemperature()
@@ -362,7 +364,7 @@ void ReadTemperature()
 	{
 		// Alarm for manually closing smokestack
 		smokeStackOpen = false;
-		SendMessage(CreateMessage(CloseSmokeAlert, "Please close smokestack!"));
+		SendMessage(CloseSmokeAlert, "Please close smokestack!");
 		PlaySound("SmokeStack.vaw");
 	}
 }
@@ -387,25 +389,25 @@ void SetHeating(int w)
 		digitalWrite(pinHeat, LOW);   // Turn off heat
 		delay(250);                   // Allow relays to flip
 		digitalWrite(pinSupply, LOW); // Set Power Drain to 10kW
-		SendMessage(CreateMessage(Heating, "0"));  // Send Update Message
+		SendMessage(Heating, "0");  // Send Update Message
 		break;
 
 	case 10:
 		digitalWrite(pinSupply, LOW);  // Set Power Drain to 10kW
 		delay(250);                    // Allow relays to flip
 		digitalWrite(pinHeat, HIGH);   // Turn on heat
-		SendMessage(CreateMessage(Heating, "10"));  // Send Update Message
+		SendMessage(Heating, "10");  // Send Update Message
 		break;
 
 	case 30:
 		digitalWrite(pinSupply, HIGH); // Set Power Drain to 30kW
 		delay(250);                    // Allow relays to flip
 		digitalWrite(pinHeat, HIGH);   // Turn on heat
-		SendMessage(CreateMessage(Heating, "30"));  // Send Update Message
+		SendMessage(Heating, "30");  // Send Update Message
 		break;
 
 	default:
-		SendMessage(CreateMessage(Error, "Wrong Wattage value: [" + String(wattage) + "]"));
+		SendMessage(Error, "Wrong Wattage value: [" + String(wattage) + "]");
 		break;
 	}
 }
