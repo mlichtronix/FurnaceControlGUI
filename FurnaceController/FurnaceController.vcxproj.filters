@@ -11,6 +11,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="FurnaceController.ino" />
+    <None Include="README.md" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="__vm\.FurnaceController.vsarduino.h">
@@ -19,5 +20,11 @@
     <ClInclude Include="stddef.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="DS1302.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="DS1302.cpp" />
   </ItemGroup>
 </Project>

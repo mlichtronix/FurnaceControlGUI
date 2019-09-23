@@ -6,6 +6,7 @@
 
     public partial class Furnace : INotifyPropertyChanged
     {
+        private static readonly int portSpeed = 9600;
         private readonly Logger L;
         private SerialPort comport;
 
@@ -215,7 +216,7 @@
         {
             if (string.IsNullOrEmpty(portName)) { return; }
 
-            comport = new SerialPort(portName, 9600)
+            comport = new SerialPort(portName, portSpeed)
             {
                 Encoding = System.Text.Encoding.ASCII,
                 ReadTimeout = 3000

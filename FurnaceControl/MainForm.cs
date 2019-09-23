@@ -71,7 +71,7 @@
                         break;
                     case "Temperature":
                         var m = new Measurement(F.Temperature, DateTime.Now);
-                        D.Measurements.Add(m);
+                        D.Measurements.Add(m);                        
                         // L.Add($"Temperature update: {m.Temperature} °C");
                         break;
                     case "ProgramCounter":
@@ -90,6 +90,7 @@
                         L.Add($"Not Implemented Event: [{e.PropertyName}]");
                         break;
                 }
+                GraphBox.Invalidate();
             });
         }
 
@@ -173,7 +174,7 @@
                         ConnectButton.Text = "Disconnect";
                         L.Add("Device is connected.");
                         D.Start = DateTime.Now;
-                        RefreshGraph(this, null);
+                        UpdateStatus(this, null);
                         GraphRefresh.Start();
                         DeviceBox.BackColor = Color.Lime;
                         break;
@@ -198,10 +199,9 @@
             });
         }
 
-        private void RefreshGraph(object sender, EventArgs e)
+        private void UpdateStatus(object sender, EventArgs e)
         {
-            F.UpdateStatus();
-            GraphBox.Invalidate();
+            F.UpdateStatus();            
         }
 
         private void UpdateImage(object sender, PaintEventArgs e)

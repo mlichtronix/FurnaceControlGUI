@@ -274,7 +274,7 @@
             // GraphRefresh
             // 
             this.GraphRefresh.Interval = 5000;
-            this.GraphRefresh.Tick += new System.EventHandler(this.RefreshGraph);
+            this.GraphRefresh.Tick += new System.EventHandler(this.UpdateStatus);
             // 
             // panel3
             // 

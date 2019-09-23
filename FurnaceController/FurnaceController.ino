@@ -7,6 +7,7 @@
 // Includes -----------------------
 #include <SPI.h>
 #include <Wire.h>
+#include "DS1302.h"
 #include <LinkedList.h>
 #include <Adafruit_MCP9600.h>
 #include <Adafruit_I2CDevice.h>
@@ -14,7 +15,8 @@
 
 // Definitions ---------------------
 #define I2C_ADDRESS (0x67)      // Adress for MCP9600 Thermocouple Breakout module
-#define BAUDS 115200
+#define BAUDS 9600
+#define TRESHOLD 5
 
 // Message Type Codes --------------
 const int NoOp				= 100;
@@ -44,6 +46,7 @@ int pinRight	= 4;   // Push Button Right
 int pinOk		= 3;   // Push Button Left
 
 //  Internal variables ----------------------
+DS1302 rtc;
 Adafruit_MCP9600 mcp;
 Adafruit_I2CDevice i2c_dev = Adafruit_I2CDevice(I2C_ADDRESS);
 
@@ -54,9 +57,6 @@ int wattageDelay = 0;         // Delay counter to full power;
 int wattageDelayMax = 150000; // Maximum delay cycles
 int remainingTime = 0;        // Remaining time of current tempering node
 int currentTemp = 0;          // Current temperature in furnace
-int maxWattage = 0;           // Maximal wattage
-int targetTemp = 0;           // Target temperature in current program node
-int treshold = 5;             // Maximal Temperature variance from target
 int wattage = 0;              // Heating Wattage
 int button = 0;               // Pressed button
 
@@ -66,6 +66,7 @@ public:
 	int temp = 0;
 	int duration = 0;
 	int drain = 10;
+	bool isTargetReached(int t);
 	ProgramBlock();
 	~ProgramBlock();
 };
@@ -81,6 +82,11 @@ ProgramBlock::~ProgramBlock()
 	~drain;
 }
 
+bool ProgramBlock::isTargetReached(int t)
+{
+	return (t >= temp - TRESHOLD && t <= temp);
+}
+
 class FiringProgram
 {
 public:
@@ -90,14 +96,23 @@ public:
 
 // FiringProgram values:
 String ScheduleTime = "";
-String CurrentTime = "";
 String ProgramName = "";
 LinkedList<ProgramBlock> * Program = new LinkedList<ProgramBlock>();
 
 void SetPlan()
 {
+	// TODO: Implement Time Comparison
+	// Wait until schedule time is reached
+	// if (!halted && Time.GetCurrentTime.toLong() < ScheduleTime.toLong()) { return; }
+	
+	// Start first block if furnace is halted
+	if (programCounter == -1) 
+	{
+		programCounter = 0;
+	}
+
 	// Wait until the main goal is reached
-	if (currentTemp >= targetTemp - treshold && currentTemp <= targetTemp) { return; }
+	if (!Program->get(programCounter).isTargetReached(currentTemp)) { return; }
 
 	// Continue after finishing tempering
 	if (!halted && remainingTime <= 0)
@@ -109,9 +124,7 @@ void SetPlan()
 			ProgramBlock block = Program->get(programCounter);
 
 			// Update values
-			remainingTime = block.duration * 36000;
-			maxWattage = block.drain;
-			targetTemp = block.temp;
+			remainingTime = block.duration * 60;
 		}
 		else
 		{
@@ -120,16 +133,22 @@ void SetPlan()
 	}
 }
 
-void UpdateTime()
+void UpdateRemainingTime()
 {
-	remainingTime--;
+	rtc.ToFurnaceString();
+	remainingTime--;	// TODO: Rewrite
 }
 
 //  Main Program -------------------------------
 void setup()
 {
+	// Hard-Wired Pins
 	SetPins();
+
+	// Serial Line	
 	Serial.begin(BAUDS);
+
+	// MCP9600 A/D Thermal Sensor
 	if (!mcp.begin())
 	{
 		SendMessage(Error, "Sensor MCP9600 not found!");
@@ -139,6 +158,12 @@ void setup()
 	mcp.setThermocoupleType(MCP9600_TYPE_K);
 	mcp.setFilterCoefficient(3);
 	mcp.enable(true);
+
+	// TODO ================================
+	// Display
+	// SD Card
+	// Audio
+	// AC Voltage Sensor
 }
 
 void loop()
@@ -150,7 +175,7 @@ void loop()
 	ReadKeyboard();
 	ConsumeKeyboard();
 	DisplayValues();
-	UpdateTime();
+	UpdateRemainingTime();
 }
 
 void SetPins()
@@ -306,8 +331,8 @@ void Response(int t, String p)
 		return;
 
 	case SetTime: // 300
-		CurrentTime = DateFromString(p);
-		SendMessage(t, DateToString(CurrentTime));
+		SetRealTime(p);
+		SendMessage(t, rtc.ToFurnaceString());
 		return;
 
 	case GetCurTemperature: // 400
@@ -351,8 +376,6 @@ void HaltAndReset()
 	programCounter = -1;
 	remainingTime = 0;
 	wattageDelay = 0;
-	maxWattage = 10;
-	targetTemp = 0;
 	wattage = 0;
 	SendMessage(Halt, "Halted");
 }
@@ -367,12 +390,6 @@ void ReadTemperature()
 		SendMessage(CloseSmokeAlert, "Please close smokestack!");
 		PlaySound("SmokeStack.vaw");
 	}
-}
-
-String DateFromString(String dateTime)
-{
-	// TODO Parse DateTime
-	return dateTime;
 }
 
 void SetHeating(int w)
@@ -424,18 +441,19 @@ void SetRelays()
 	{
 		wattageDelay++;
 	}
-
+	
+	ProgramBlock block = Program->get(programCounter);
 	// Temperature reached target value
-	if (currentTemp >= targetTemp)
+	if (currentTemp >= block.temp)
 	{
 		SetHeating(0);
 	}
 	else
 	{
 		// Temperature dropped under threshold value
-		if (currentTemp <= targetTemp - 10)
+		if (currentTemp <= block.temp - 10)
 		{
-			if (maxWattage == 10)
+			if (block.drain == 10)
 			{
 				SetHeating(10);
 			}
@@ -495,3 +513,32 @@ void PlaySound(String soundName)
 {
 
 }
+
+void SetRealTime(String s)
+{
+	LinkedList<String> values = Split(s, '-');
+	bool allOk = true;
+	if (values.size() == 6) 
+	{
+		for (int i = 0; i < values.size(); i++)
+		{
+			if (!isNumber(values.get(i))) 
+			{
+				allOk = false;
+				break;
+			}
+		}
+		int yrs	= values.get(0).toInt();
+		int mon	= values.get(1).toInt();
+		int day	= values.get(2).toInt();
+		int hrs	= values.get(3).toInt();
+		int min	= values.get(4).toInt();
+		int sec	= values.get(5).toInt();
+		rtc.init(sec, min, hrs, day, mon, yrs);
+	}
+	if(!allOk)
+	{
+		SendMessage(Error, "Canot convert DateTimeString[" + s + "]");
+	}
+}
+
