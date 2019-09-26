@@ -48,7 +48,7 @@
   <ItemGroup>
     <Compile Include="Model\Display.cs" />
     <Compile Include="Extensions.cs" />
-    <Compile Include="Model\FiringProgram.cs" />
+    <Compile Include="Model\FiringPlan.cs" />
     <Compile Include="Model\Furnace.cs" />
     <Compile Include="Model\Heating.cs" />
     <Compile Include="Model\MessageFactory.cs" />
@@ -89,6 +89,7 @@
     <Compile Include="Properties\Resources.Designer.cs">
       <AutoGen>True</AutoGen>
       <DependentUpon>Resources.resx</DependentUpon>
+      <DesignTime>True</DesignTime>
     </Compile>
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>
@@ -103,9 +104,14 @@
   <ItemGroup>
     <None Include="App.config" />
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <None Include="Resources\SmokeStackOpen.png" />
+  </ItemGroup>
   <ItemGroup>
     <WCFMetadata Include="Connected Services\" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\SmokeStackClosed.png" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

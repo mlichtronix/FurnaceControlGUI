@@ -53,6 +53,7 @@
                 {
                     case "Halted":
                         SetStartHaltButton(F.Halted);
+                        D.SmokeStackClosed = false;
                         break;
                     case "Start":
                         SetStartHaltButton(F.Halted);
@@ -62,6 +63,7 @@
                         L.Add($"Start Time: [{F.StartTime}]");
                         break;
                     case "CloseSmokeAlert":
+                        D.SmokeStackClosed = true;
                         string msg = "Please close smokestack!";
                         L.Add(msg);
                         MessageBox.Show(msg, "Alert", MessageBoxButtons.OK, MessageBoxIcon.Warning);
@@ -70,8 +72,8 @@
                         UpdateStatus();
                         break;
                     case "Temperature":
-                        D.Temperature = F.Temperature;
-                        if (!F.Halted)
+                        D.CurrentTemperature = F.Temperature;
+                        if (F.ProgramCounter > -1)
                         {
                             D.Measurements.Add(new Measurement(F.Temperature, DateTime.Now));
                         }
@@ -96,9 +98,9 @@
             });
         }
 
-        private void InvokeUI(Action a)
+        private void InvokeUI(Action action)
         {
-            if (IsHandleCreated) { BeginInvoke(new MethodInvoker(a)); }
+            if (IsHandleCreated) { BeginInvoke(new MethodInvoker(action)); }
         }
 
         private void UpdateLogBox(object sender, PropertyChangedEventArgs e)

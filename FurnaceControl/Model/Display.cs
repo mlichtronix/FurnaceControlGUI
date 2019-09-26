@@ -8,19 +8,41 @@
     public class Display
     {
         // Static Constants
-        private static readonly float MaxTemp = 1400.0f;    // Maximal Temperature that furnace can handle
+        private static readonly float MaxTemp = 1400.0f;    // Maximal Temperature that furnace display can show
         private static readonly Font fontBig = new Font(FontFamily.GenericMonospace, 25, FontStyle.Bold);
         private static readonly Font fontSmall = new Font(FontFamily.GenericMonospace, 10, FontStyle.Bold);
-        private static readonly StringFormat center = new StringFormat() { Alignment = StringAlignment.Center };
+        private static readonly StringFormat center = new StringFormat() { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center };
 
         // Properties
-        public int Temperature = 0;
         public List<Measurement> Measurements { get; set; } = new List<Measurement>();
-        public FiringPlan Plan { get; set; } = new FiringPlan();
         public List<Heating> Heatings { get; set; } = new List<Heating>();
+        public FiringPlan Plan { get; set; } = new FiringPlan();
         public bool SmokeStackClosed { get; set; } = false;
+        public int CurrentTemperature { get; set; } = 0;
         public int ProgramCounter { get; set; } = -1;
         public DateTime Start { get; set; }
+        public DateTime LastRecordTime
+        {
+            get
+            {
+                DateTime last = Start;
+                if (Measurements.Any()) { last = Measurements.Last().Time; }
+                if (Heatings.Any())
+                {
+                    var heating = Heatings.Last();
+                    var lastHeatingTime = DateTime.Now;
+                    if (heating.Power == Wattage.Power0kW)
+                    {
+                        lastHeatingTime = heating.StartTime;
+                    }
+                    if (lastHeatingTime > last)
+                    {
+                        last = lastHeatingTime;
+                    }
+                }
+                return last;
+            }
+        }
 
         // Constructor
         public Display() { }
@@ -32,7 +54,7 @@
             {
                 var size = g.ClipBounds.Size;
                 DateTime first = Start;
-                DateTime last = Measurements.Last().Time;
+                DateTime last = LastRecordTime;
                 float duration = (float)(last - first).TotalSeconds;
                 float stepX = size.Width / duration;
                 float stepY = size.Height / (MaxTemp * 1.0f);
@@ -72,7 +94,7 @@
             if (Heatings.Count > 0)
             {
                 var size = g.ClipBounds.Size;
-                DateTime last = Measurements.Last().Time;
+                DateTime last = LastRecordTime;
                 float stepX = size.Width / (float)(last - Start).TotalSeconds;
                 float stepY = (size.Height / MaxTemp) * 10;
 
@@ -120,7 +142,7 @@
             // Draw line every 30 minutes
             if (Measurements.Count > 1)
             {
-                float duration = (float)(Measurements.Last().Time - Measurements.First().Time).TotalMinutes;
+                float duration = (float)(LastRecordTime - Measurements.First().Time).TotalMinutes;
                 float stepX = width / duration;
                 for (double i = 30; i < duration; i += 30)
                 {
@@ -130,22 +152,25 @@
             }
         }
 
+        private void DrawSmokestack(Graphics g)
+        {
+            g.DrawImage(SmokeStackClosed?Properties.Resources.SmokeStackClosed:Properties.Resources.SmokeStackOpen, (int)g.ClipBounds.Width - 64, 64);
+        }
+
         // Public Methods
         public void Draw(Graphics g)
         {
             DrawGrid(g);
-            if (Measurements.Any())
-            {
-                DrawHeatings(g);
-                DrawTemperatures(g);
+            if (Heatings.Any()) { DrawHeatings(g); }
+            if (Measurements.Any()) { DrawTemperatures(g); }
 
-                Rectangle CurrentTemperatureBox = new Rectangle((int)g.ClipBounds.Width - 204, 2, 202, 42);
+            Rectangle CurrentTemperatureBox = new Rectangle((int)g.ClipBounds.Width - 204, 2, 202, 50);
+            g.FillRectangle(Brushes.Yellow, CurrentTemperatureBox);
+            g.DrawRectangle(new Pen(Brushes.Black, 2), CurrentTemperatureBox);
+            g.DrawString(CurrentTemperature + " °C", fontBig, Brushes.Red, CurrentTemperatureBox, center);
 
-                g.FillRectangle(Brushes.Yellow, CurrentTemperatureBox);
-                g.DrawRectangle(new Pen(Brushes.Black, 2), CurrentTemperatureBox);
-                g.DrawString(Temperature + "°C", fontBig, Brushes.Red, CurrentTemperatureBox, center);
-            }
             DrawProgram(g);
+            DrawSmokestack(g);
             g.Flush();
         }
     }

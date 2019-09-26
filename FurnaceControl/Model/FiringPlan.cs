@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.Linq;
 using System.Xml.Serialization;
 
@@ -13,7 +12,7 @@ namespace FurnaceControl
         /// Program Name
         /// </summary>
         [XmlAttribute]
-        public string Name { get; set; } = "Custom Program";
+        public string Name { get; set; } = String.Empty;
 
         /// <summary>
         /// Schedule for start at certain date/time
@@ -41,7 +40,7 @@ namespace FurnaceControl
         internal static FiringPlan FromFurnaceString(string data)
         {
             var program = new FiringPlan();
-            var nameBlocks = data.Split('|');            
+            var nameBlocks = data.Split('|');
             var triplets = nameBlocks[1].Split(';');
             List<ProgramBlock> blocks = new List<ProgramBlock>();
             foreach (var triplet in triplets)
