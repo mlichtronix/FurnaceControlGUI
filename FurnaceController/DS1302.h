@@ -60,14 +60,19 @@
 class DateTime
 {
   public:
-    int Year;
-    int Month;
-    int Day;
-    int Hours;
-    int Minutes;
-    int Seconds;
-	
-    long DateTime::ToSeconds(void)
+    int Year = 0;
+    int Month = 0;
+    int Day = 0;
+    int Hours = 0;
+    int Minutes = 0;
+    int Seconds = 0;
+
+    String ToFurnaceString(void)
+    {
+      return String(Year) + "-" + String(Month) + "-" + String(Day) + "-" + String(Hours) + "-" + String(Minutes) + "-" + String(Seconds);
+    }
+
+    long ToSeconds(void)
     {
       long Y =  long(Year    * 31556926);
       long M =  long(Month   * 2629744);
@@ -77,45 +82,66 @@ class DateTime
       return long(Y + M + D + H + E + Seconds);
     }
 
-	String DateTime::ToFurnaceString(void)
-	{		
-		return String(Year) + "-" + String(Month) + "-" + String(Day) + "-" + String(Hours) + "-" + String(Minutes) + "-" + String(Seconds);
-	}
 };
+
 
 
 class DS1302
 {
-public:
-	struct DsDateTime
-	{
-		uint8_t Seconds : 4;
-		uint8_t Seconds10 : 3;
-		uint8_t Minutes : 4;
-		uint8_t Minutes10 : 3;
-		uint8_t Hour : 4;
-		uint8_t Hour10 : 2;
-		uint8_t Date : 4;
-		uint8_t Date10 : 2;
-		uint8_t Month : 4;
-		uint8_t Month10 : 1;
-		uint8_t Year : 4;
-		uint8_t Year10 : 4;
-		uint8_t WP : 1;
-		uint8_t CH : 1;
-	} dsDateTime;
+  public:
+    struct {
+      uint8_t Seconds: 4;
+      uint8_t Seconds10: 3;
+      uint8_t CH: 1;
+      uint8_t Minutes: 4;
+      uint8_t Minutes10: 3;
+      uint8_t reserved1: 1;
 
-	DS1302();
-	void _DS1302_start(void);
-	void _DS1302_stop(void);
-	void _DS1302_togglewrite(uint8_t data, uint8_t release);
-	uint8_t DS1302_read(int address);
-	void DS1302_write(int address, uint8_t data);
-	void DS1302_clock_burst_read(uint8_t *p);
-	void DS1302_clock_burst_write(uint8_t *p);
+      union
+      {
+        struct
+        {
+          uint8_t Hour: 4;
+          uint8_t Hour10: 2;
+          uint8_t reserved2: 1;
+          uint8_t hour_12_24: 1;
+        } h24;
 
-	void init(int seconds, int minutes, int hours, int dayOfMonth, int month, int year);
-	void read(void);
-	DateTime Now(void);
+        struct
+        {
+          uint8_t Hour: 4;
+          uint8_t Hour10: 1;
+          uint8_t AM_PM: 1;
+          uint8_t reserved2: 1;
+          uint8_t hour_12_24: 1;
+        } h12;
+      };
+
+      uint8_t Date: 4;
+      uint8_t Date10: 2;
+      uint8_t reserved3: 2;
+      uint8_t Month: 4;
+      uint8_t Month10: 1;
+      uint8_t reserved4: 3;
+      uint8_t Day: 3;
+      uint8_t reserved5: 5;
+      uint8_t Year: 4;
+      uint8_t Year10: 4;
+      uint8_t reserved6: 7;
+      uint8_t WP: 1;
+    } dsDateTime;
+
+    DS1302();
+    void _DS1302_start(void);
+    void _DS1302_stop(void);
+    void _DS1302_togglewrite(uint8_t data, uint8_t release);
+    uint8_t DS1302_read(int address);
+    void DS1302_write(int address, uint8_t data);
+    void DS1302_clock_burst_read(uint8_t *p);
+    void DS1302_clock_burst_write(uint8_t *p);
+
+    void init(int seconds, int minutes, int hours, int dayOfMonth, int month, int year);
+    void read(void);
+    DateTime Now(void);
 };
 #endif

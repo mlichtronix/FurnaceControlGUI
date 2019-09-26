@@ -1,7 +1,7 @@
 /*
- Name:		FurnaceController.ino
- Created:	9/13/2019 2:22:25 PM
- Author:	Mlichtronix
+	Name:    FurnaceController.ino
+	Created: 9/13/2019 2:22:25 PM
+	Author:  Mlichtronix
 */
 
 // Includes -----------------------
@@ -14,74 +14,91 @@
 #include <Adafruit_I2CRegister.h>
 
 // Definitions ---------------------
-#define I2C_ADDRESS (0x67)      // Adress for MCP9600 Thermocouple Breakout module
-#define BAUDS 9600
-#define TRESHOLD 5
+#define I2C_ADDRESS		(0x67)	// Adress for MCP9600 Thermocouple Breakout module
+#define BAUDS			9600	// Serial port Baud Rate
+#define TRESHOLD		5		// Unde-rtemeperature limit
+#define DATESEPARATOR	'-'		// DateTime Separating Character
+#define WATTAGEDELAYMAX	5000	// Maximum heating delay cycles
+#define SMOKESTACKTEMP	400		// Temperature when it is necessary to close smokestack
 
 // Message Type Codes --------------
-const int NoOp				= 100;
-const int HandShake			= 200;
-const int SetTime			= 300;
-const int GetCurTemperature = 400;
-const int GetPcSatus		= 500;
-const int GetCurrentProgram = 600;
-const int SetProgram		= 650;
-const int Start				= 700;
-const int CloseSmokeAlert	= 800;
-const int LogMessage		= 900;
-const int Heating			= 950;
-const int Error				= 990;
-const int Invalid			= 995;
-const int Halt				= 999;
+#define NoOp				100
+#define HandShake			200
+#define SetTime				300
+#define GetCurTemperature	400
+#define GetPcSatus			500
+#define GetCurrentProgram	600
+#define SetProgram			650
+#define Start				700
+#define CloseSmokeAlert		800
+#define LogMessage			900
+#define Heating				950
+#define Error				990
+#define Invalid				995
+#define Halt				999
 
-//  Pinout settings -------------------------
-int pinSpkr		= 11;  // Speaker Pin
-int pinPower	= 10;  // Enable Relay Input
-int pinSupply	= 9;   // LOW 10kW - HIGH 30kW
-int pinHeat		= 8;   // Enable heating
-int pinUp		= 7;   // Push Button Up
-int pinDown		= 6;   // Push Button Down
-int pinLeft		= 5;   // Push Button Left
-int pinRight	= 4;   // Push Button Right
-int pinOk		= 3;   // Push Button Left
+// Pinout settings -------------------------
+int pinSpkr		= 11;	// Speaker Pin
+int pinPower	= 10;	// Enable Relay Input
+int pinSupply	= 9;	// LOW 10kW - HIGH 30kW
+int pinHeat		= 8;	// Enable heating
+int pinUp		= 7;	// Push Button Up
+int pinDown		= 6;	// Push Button Down
+int pinLeft		= 5;	// Push Button Left
+int pinRight	= 4;	// Push Button Right
+int pinOk		= 3;	// Push Button Left
 
-//  Internal variables ----------------------
-DS1302 rtc;
-Adafruit_MCP9600 mcp;
+// Internal variables ----------------------
+DS1302 rtc;				// Reali Time Module
+Adafruit_MCP9600 mcp;	// Thermocouple AD module
 Adafruit_I2CDevice i2c_dev = Adafruit_I2CDevice(I2C_ADDRESS);
 
-bool halted = true;           // System is halted
-bool smokeStackOpen = true;   // Smokestack is initially open
-int programCounter = -1;      // Id of active program node
-int wattageDelay = 0;         // Delay counter to full power;
-int wattageDelayMax = 150000; // Maximum delay cycles
-int remainingTime = 0;        // Remaining time of current tempering node
-int currentTemp = 0;          // Current temperature in furnace
-int wattage = 0;              // Heating Wattage
-int button = 0;               // Pressed button
-
+// One node of Firing program
 class ProgramBlock
 {
 public:
+	// Heating coils engagement configuration
+	enum Wattage
+	{
+		Wattage0kW  =  0,	// Heating Off
+		Wattage10kW = 10,	// Coils engagement configuration delta	| A
+		Wattage30kW = 30,	// Coils engagement configuration star	| Y
+	};
+
+	// Target Temperature
 	int temp = 0;
+
+	// Tempering duration
 	int duration = 0;
-	int drain = 10;
+
+	// Maximum power drain configuration
+	Wattage drain;
+
+	// Target temperature is reached
 	bool isTargetReached(int t);
+
 	ProgramBlock();
 	~ProgramBlock();
 };
 
-ProgramBlock::ProgramBlock() 
-{
-}
+ProgramBlock::ProgramBlock() {}		// Implicit Constructor for LinkedList needs
+ProgramBlock::~ProgramBlock() {}	// Implicit Destructor for LinkedList needs
 
-ProgramBlock::~ProgramBlock() 
-{
-	~temp;
-	~duration;
-	~drain;
-}
+// FiringProgram values:
+DateTime ScheduleTime;			// Time Schedule of firing
+ProgramBlock::Wattage wattage;	// Maximum heating engagement of current node
+String ProgramName = "";		// Name of current set firing program
+long temperingEnd = 0;			// End of current tempering in seconds
+bool tempering = false;			// Target Temperature is reached and furnace is in tempering mode
+bool halted = true;				// System is halted
+bool smokeStackOpen = true;		// Smokestack status (initially open)
+long wattageDelay = 0;			// Delay counter to full power (Power grid utility safety procedure: 10kW--10s->30kW)
+int programCounter = -1;		// Id of active program node
+int remainingTime = 0;			// Remaining time of tempering period of current node
+int currentTemp = 0;			// Current temperature in furnace
+int button = 0;					// Pressed button
 
+// Check if temperature in furnace is in range of current block target temperature
 bool ProgramBlock::isTargetReached(int t)
 {
 	return (t >= temp - TRESHOLD && t <= temp);
@@ -90,62 +107,75 @@ bool ProgramBlock::isTargetReached(int t)
 class FiringProgram
 {
 public:
+	// Program name
 	String Name;
+
+	// Program nodes (Temperature, Duration, Wattage)
 	LinkedList<ProgramBlock> Blocks;
 };
 
-// FiringProgram values:
-String ScheduleTime = "";
-String ProgramName = "";
+// Currently set Firing Program
 LinkedList<ProgramBlock> * Program = new LinkedList<ProgramBlock>();
 
 void SetPlan()
 {
-	// TODO: Implement Time Comparison
-	// Wait until schedule time is reached
-	// if (!halted && Time.GetCurrentTime.toLong() < ScheduleTime.toLong()) { return; }
+	// Return if halted / Before scheduled time / Some remaining time left
+	if (halted || rtc.Now().ToSeconds() < ScheduleTime.ToSeconds() || remainingTime > 0) { return; }
 	
-	// Start first block if furnace is halted
-	if (programCounter == -1) 
+	// Set Next Block if available
+	if (programCounter + 1 < Program->size())
 	{
-		programCounter = 0;
-	}
-
-	// Wait until the main goal is reached
-	if (!Program->get(programCounter).isTargetReached(currentTemp)) { return; }
-
-	// Continue after finishing tempering
-	if (!halted && remainingTime <= 0)
-	{
-		// Go to next block
+		tempering = false;
 		programCounter++;
-		if (programCounter < Program->size())
-		{
-			ProgramBlock block = Program->get(programCounter);
+		SendMessage(GetPcSatus, String(programCounter));
+	}
+	else
+	{
+		// Finish firing after last block
+		HaltAndReset();
+	}
+}
 
-			// Update values
-			remainingTime = block.duration * 60;
+// Update remaining time of current tempering
+void UpdateRemainingTime()
+{
+	// Return if halted
+	if (halted || programCounter == -1) { return; }
+
+	// Tempering mode?
+	if (tempering)
+	{
+		// Count down remaining time
+		remainingTime = temperingEnd - rtc.Now().ToSeconds();
+	}
+	else
+	{
+		ProgramBlock block = Program->get(programCounter);
+
+		// Is target temeperature reached?
+		if (block.isTargetReached(currentTemp))
+		{
+			// Set tempering values
+			tempering = true;							// Set Tempering mode
+			remainingTime = block.duration * 60;		// Set Remaining time
+			temperingEnd = rtc.Now().ToSeconds() + remainingTime; // Set when is temepring finished
 		}
 		else
 		{
-			HaltAndReset();
+			// Keep resetting remaining time until main goal is reached
+			remainingTime = 1;
+			temperingEnd = rtc.Now().ToSeconds() + remainingTime;
 		}
 	}
 }
 
-void UpdateRemainingTime()
-{
-	rtc.ToFurnaceString();
-	remainingTime--;	// TODO: Rewrite
-}
 
-//  Main Program -------------------------------
 void setup()
 {
 	// Hard-Wired Pins
 	SetPins();
 
-	// Serial Line	
+	// Serial Line
 	Serial.begin(BAUDS);
 
 	// MCP9600 A/D Thermal Sensor
@@ -168,10 +198,10 @@ void setup()
 
 void loop()
 {
-	SetPlan();
 	ReadTemperature();
-	SetRelays();
 	ReadSerial();
+	SetPlan();
+	SetRelays();
 	ReadKeyboard();
 	ConsumeKeyboard();
 	DisplayValues();
@@ -186,11 +216,9 @@ void SetPins()
 	pinMode(pinLeft, INPUT);
 	pinMode(pinRight, INPUT);
 	pinMode(pinOk, INPUT);
-
-	// Led Pin
-	pinMode(LED_BUILTIN, OUTPUT);
 }
 
+// Check if String contains only numeric values
 bool isNumber(String data)
 {
 	for (int i = 0; i < data.length(); i++)
@@ -203,12 +231,7 @@ bool isNumber(String data)
 	return true;
 }
 
-String DateToString(String t)
-{
-	// TODO Implement DateTime class
-	return t;
-}
-
+// Convert Current Firing Program to String reperesentation
 String ProgramToString()
 {
 	String nameDate = ProgramName + "|";
@@ -226,6 +249,7 @@ String ProgramToString()
 	return nameDate + blocks;
 }
 
+// Split string into LinkedList<String> by delimiter character
 LinkedList<String> Split(String data, char delimiter)
 {
 	LinkedList<String> output = LinkedList<String>();
@@ -246,54 +270,69 @@ LinkedList<String> Split(String data, char delimiter)
 	}
 	if (last < l)
 	{
+		// Add trailning leftovers
 		output.add(data.substring(last));
 	}
 	return output;
 }
 
+// Parse Firing Program from String reperesentation
 bool ParseProgram(String data)
 {
-	//Data example: "Custom program|400*30*10;960*30*30;1200*60*30"
+	// Data example:
+	// "Custom program|400*30*10;960*30*30;1200*60*30"
 
-	LinkedList<String> parts = Split(data, '|');
-	String progName = parts.get(0);
-	LinkedList<String> blocksStr = Split(parts.get(1), ';');
+	LinkedList<String> headTail = Split(data, '|');
+	String progName = headTail.get(0);
+
+	// Split blocks
+	LinkedList<String> blocksStr = Split(headTail.get(1), ';');
 	LinkedList<ProgramBlock> *blocks = new LinkedList<ProgramBlock>();
-	
+
+	// Process all blocks
 	for (int i = 0; i < blocksStr.size(); i++)
 	{
+		// Split values
 		LinkedList<String> values = Split(blocksStr.get(i), '*');
 
+		// Verify that all values are valid
 		if (values.size() == 3 &&
 			isNumber(values.get(0)) &&
 			isNumber(values.get(1)) &&
-			isNumber(values.get(2))) 
+			isNumber(values.get(2)))
 		{
+			// Add new block to program
 			ProgramBlock block;
 			block.temp = values.get(0).toInt();
 			block.duration = values.get(1).toInt();
-			block.drain = values.get(2).toInt();
+			block.drain = ProgramBlock::Wattage(values.get(2).toInt());
 			blocks->add(block);
 		}
 		else
 		{
-			return false;
+			return false; // Error occured
 		}
 	}
 	Program = blocks;
 	ProgramName = progName;
-	return true;
+	return true; // Program is parsed correctly
 }
 
+// Read communication from Serial port
 void ReadSerial()
 {
-	if (Serial.available())
+	// Is something on serial port?
+	if (Serial.available()) 
 	{
+		// Read only one line at the time (1 line = 1 command)
 		String message = Serial.readStringUntil('\n');
 		if (message.length() >= 4)
 		{
-			String typeStr = message.substring(0, 3);			
-			String dataStr = message.substring(4);
+			// Message format: <MessageTypeCode>:<MessageData>
+			// Example: "650:Custom program|400*30*10"
+
+			String typeStr = message.substring(0, 3);	// Separate Message Code
+			String dataStr = message.substring(4);		// Separate Message Data
 			typeStr.trim();
 			dataStr.trim();
 			if (isNumber(typeStr))
@@ -302,10 +341,11 @@ void ReadSerial()
 				return;
 			}
 		}
-		SendMessage(Invalid, message);
+		SendMessage(Invalid, message);	// Error occured
 	}
 }
 
+// Send message over Srial Port
 void SendMessage(int t, String msg)
 {
 	if (Serial)
@@ -314,42 +354,47 @@ void SendMessage(int t, String msg)
 	}
 }
 
+// response to commands from Serial port
 void Response(int t, String p)
 {
 	switch (t)
 	{
-	case HandShake: // 200
-		// Return ID of this device according official manufacturer documentation
-		SendMessage(t, "CEP-0.5-1150");
-		return;
-
-	case Start: // 700
-		halted = false;
-		programCounter = -1;
-		ScheduleTime = DateFromString(p);
-		SendMessage(t, DateToString(ScheduleTime));
-		return;
-
-	case SetTime: // 300
-		SetRealTime(p);
-		SendMessage(t, rtc.ToFurnaceString());
-		return;
-
-	case GetCurTemperature: // 400
-		// Return Current Temperature in Furnace
+	case GetCurTemperature:
+		// 400 - Return Current Temperature in Furnace
 		SendMessage(t, String(currentTemp));
 		return;
 
-	case GetPcSatus:  // 500
-		// Return Current Program Block number
+	case GetPcSatus:
+		// 500 - Return Current Program Block number
 		SendMessage(t, String(programCounter));
 		return;
 
-	case GetCurrentProgram: // 600
+	case Start:
+		// 700 - Set Schedule time
+		ScheduleTime = DateFromString(p);
+		programCounter = -1;
+		halted = false;
+		SendMessage(t, ScheduleTime.ToFurnaceString());
+		return;
+
+	case HandShake:
+		// 200 - Return ID of this device according official manufacturer documentation
+		SendMessage(t, "CEP-0.5-1150");
+		return;
+
+	case SetTime:
+		// 300 - Set RealTime
+		SetRealTime(DateFromString(p));
+		SendMessage(t, rtc.Now().ToFurnaceString());
+		return;
+
+	case GetCurrentProgram:
+		// 600 - Return current program
 		SendMessage(t, ProgramToString());
 		return;
 
-	case SetProgram:  // 650
+	case SetProgram:
+		// 650 - Set Custom program
 		if (ParseProgram(p))
 		{
 			SendMessage(t, "Program Set");
@@ -360,141 +405,141 @@ void Response(int t, String p)
 		}
 		return;
 
-	case Halt:  // 999
-		// Stop any activity and reset all settings to default position
+	case Halt:
+		// 999 - Stop any activity and reset all settings to default position
 		HaltAndReset();
 		return;
 	}
-	SendMessage(Invalid, "Unsupported command! [" + String(t) + ":" + p + "]");
+	SendMessage(Invalid, "Unsupported command: [" + String(t) + ":" + p + "]");
 }
 
-void HaltAndReset()
-{
-	SetHeating(0);
-	halted = true;
-	smokeStackOpen = true;
-	programCounter = -1;
-	remainingTime = 0;
-	wattageDelay = 0;
-	wattage = 0;
-	SendMessage(Halt, "Halted");
-}
-
+// Measure Temperature in furnace
 void ReadTemperature()
 {
 	currentTemp = mcp.readThermocouple();
-	if (currentTemp >= 400 && smokeStackOpen == true)
+
+	// Alarm for manually closing smokestack
+	if (!halted && currentTemp >= SMOKESTACKTEMP && smokeStackOpen == true)
 	{
-		// Alarm for manually closing smokestack
 		smokeStackOpen = false;
 		SendMessage(CloseSmokeAlert, "Please close smokestack!");
 		PlaySound("SmokeStack.vaw");
 	}
 }
 
-void SetHeating(int w)
+// Set heating in furnace according to target temperature
+void SetHeating(ProgramBlock::Wattage w)
 {
-	if (w == wattage)
-	{
-		return;
-	}
-	wattage = w;  // Update wattage
+	// Avoid unnecessary updating value
+	if (w == wattage) { return; }
+
+	wattage = w;		// Update wattage to new value
 	switch (wattage)
 	{
-	case 0:
-		wattageDelay = 0;  // Reset delay
-		digitalWrite(pinHeat, LOW);   // Turn off heat
-		delay(250);                   // Allow relays to flip
-		digitalWrite(pinSupply, LOW); // Set Power Drain to 10kW
-		SendMessage(Heating, "0");  // Send Update Message
+	case 0:	// Disable heating
+		wattageDelay = 0;				// Reset delay
+		digitalWrite(pinHeat, LOW);		// Turn off heat
+		delay(250);						// Allow relays to flip
+		digitalWrite(pinSupply, LOW);	// Set Power Drain to 10kW
 		break;
 
-	case 10:
-		digitalWrite(pinSupply, LOW);  // Set Power Drain to 10kW
-		delay(250);                    // Allow relays to flip
-		digitalWrite(pinHeat, HIGH);   // Turn on heat
-		SendMessage(Heating, "10");  // Send Update Message
+	case 10:	// Enable low heating
+		digitalWrite(pinSupply, LOW);	// Set Power Drain to 10kW
+		delay(250);						// Allow relays to flip
+		digitalWrite(pinHeat, HIGH);	// Turn on heat
 		break;
 
-	case 30:
-		digitalWrite(pinSupply, HIGH); // Set Power Drain to 30kW
-		delay(250);                    // Allow relays to flip
-		digitalWrite(pinHeat, HIGH);   // Turn on heat
-		SendMessage(Heating, "30");  // Send Update Message
+	case 30:	// Enable full heating
+		digitalWrite(pinSupply, HIGH);	// Set Power Drain to 30kW
+		delay(250);						// Allow relays to flip
+		digitalWrite(pinHeat, HIGH);	// Turn on heat
 		break;
 
-	default:
+	default:			// Something went wrong
 		SendMessage(Error, "Wrong Wattage value: [" + String(wattage) + "]");
 		break;
 	}
+	// Send Update Message
+	SendMessage(Heating, String(wattage));
 }
 
+// Set Power Relays via SSR Array Module
 void SetRelays()
 {
-	if (halted)
+	// Do nothing if halted
+	if (halted || programCounter == -1)
 	{
-		SetHeating(0);
+		SetHeating(ProgramBlock::Wattage0kW);
 		return;
 	}
 
-	if (wattageDelay < wattageDelayMax)
+	// Update wattage delay if is under maxvalue
+	if (wattageDelay < WATTAGEDELAYMAX)
 	{
 		wattageDelay++;
 	}
-	
+
+	// Select current program block
 	ProgramBlock block = Program->get(programCounter);
-	// Temperature reached target value
+
+	// Temperature reached target value?
 	if (currentTemp >= block.temp)
 	{
-		SetHeating(0);
+		SetHeating(ProgramBlock::Wattage0kW);				// Disable heating
 	}
 	else
 	{
-		// Temperature dropped under threshold value
+		// Temperature dropped under threshold value?
 		if (currentTemp <= block.temp - 10)
 		{
+			// 10kW only?
 			if (block.drain == 10)
 			{
-				SetHeating(10);
+				SetHeating(ProgramBlock::Wattage10kW);		// Set Low Power
 			}
 			else
 			{
-				if (wattageDelay >= wattageDelayMax)
+				// Passed 15s after 10kW was engaged?
+				if (wattageDelay >= WATTAGEDELAYMAX)
 				{
-					SetHeating(30);
+					SetHeating(ProgramBlock::Wattage30kW);	// Set Full Power
 				}
 				else
 				{
-					SetHeating(10);
+					SetHeating(ProgramBlock::Wattage10kW);	// Set Low Power					
 				}
 			}
 		}
 	}
 }
 
+// Halt system and reset values to defaults
+void HaltAndReset()
+{
+	SetHeating(ProgramBlock::Wattage0kW);
+	halted = true;
+	tempering = false;
+	smokeStackOpen = true;
+	programCounter = -1;
+	remainingTime = 0;
+	wattageDelay = 0;
+	SendMessage(Halt, "Halted");
+	PlaySound("Halted.vaw");
+}
+
+// Read pressed buttons
 void ReadKeyboard()
 {
 	button = 0;
-	if (digitalRead(pinUp)) {
-		button = 1;
-	}
-	if (digitalRead(pinDown)) {
-		button = 2;
-	}
-	if (digitalRead(pinLeft)) {
-		button = 3;
-	}
-	if (digitalRead(pinRight)) {
-		button = 4;
-	}
-	if (digitalRead(pinOk)) {
-		button = 5;
-	}
-	if (button > 0) {
-		delay(250);
-	}
+	if (digitalRead(pinUp)) { button = 1; }
+	if (digitalRead(pinDown)) { button = 2; }
+	if (digitalRead(pinLeft)) { button = 3; }
+	if (digitalRead(pinRight)) { button = 4; }
+	if (digitalRead(pinOk)) { button = 5; }
+	if (button > 0) { delay(250); }
 }
 
+// Navigate trough menu on LCD display
 void ConsumeKeyboard()
 {
 	if (button > 0)
@@ -504,41 +549,56 @@ void ConsumeKeyboard()
 	}
 }
 
+// Draw Display on I2C OLED Module
 void DisplayValues()
 {
-
+	// TODO: Implement Furnace I2C Display
 }
 
+// Play selected sound file from SD Card
 void PlaySound(String soundName)
 {
-
+	// TODO: Implement PlaySound from SD Card
 }
 
-void SetRealTime(String s)
+// Parse DateTime from string representation
+DateTime DateFromString(String s)
 {
-	LinkedList<String> values = Split(s, '-');
-	bool allOk = true;
-	if (values.size() == 6) 
+	LinkedList<String> values = Split(s, DATESEPARATOR);
+	bool allOk = values.size() == 6;	// Is Correct count of parts?
+	if (allOk)
 	{
+		// Check if only numeric characters
 		for (int i = 0; i < values.size(); i++)
 		{
-			if (!isNumber(values.get(i))) 
+			if (!isNumber(values.get(i)))
 			{
 				allOk = false;
 				break;
 			}
 		}
-		int yrs	= values.get(0).toInt();
-		int mon	= values.get(1).toInt();
-		int day	= values.get(2).toInt();
-		int hrs	= values.get(3).toInt();
-		int min	= values.get(4).toInt();
-		int sec	= values.get(5).toInt();
-		rtc.init(sec, min, hrs, day, mon, yrs);
 	}
-	if(!allOk)
+
+	if (allOk)
 	{
-		SendMessage(Error, "Canot convert DateTimeString[" + s + "]");
+		// Initialize DateTime values
+		DateTime t;
+		t.Year = values.get(0).toInt();
+		t.Month = values.get(1).toInt();
+		t.Day = values.get(2).toInt();
+		t.Hours = values.get(3).toInt();
+		t.Minutes = values.get(4).toInt();
+		t.Seconds = values.get(5).toInt();
+		return t;
 	}
+
+	// String is not in cerrect format
+	SendMessage(Error, "Canot convert DateTimeString[" + s + "]");
+	return DateTime();
 }
 
+// Set time in RTC module
+void SetRealTime(DateTime t)
+{
+	rtc.init(t.Seconds, t.Minutes, t.Hours, t.Day, t.Month, t.Year);
+}

@@ -8,11 +8,13 @@
     public class Display
     {
         // Static Constants
-        private static readonly float MaxTemp = 1400.0f;        // Maximal Temperature that furnace can handle        
+        private static readonly float MaxTemp = 1400.0f;    // Maximal Temperature that furnace can handle
         private static readonly Font fontBig = new Font(FontFamily.GenericMonospace, 25, FontStyle.Bold);
         private static readonly Font fontSmall = new Font(FontFamily.GenericMonospace, 10, FontStyle.Bold);
         private static readonly StringFormat center = new StringFormat() { Alignment = StringAlignment.Center };
+
         // Properties
+        public int Temperature = 0;
         public List<Measurement> Measurements { get; set; } = new List<Measurement>();
         public FiringPlan Plan { get; set; } = new FiringPlan();
         public List<Heating> Heatings { get; set; } = new List<Heating>();
@@ -30,7 +32,7 @@
             {
                 var size = g.ClipBounds.Size;
                 DateTime first = Start;
-                DateTime last = DateTime.Now;
+                DateTime last = Measurements.Last().Time;
                 float duration = (float)(last - first).TotalSeconds;
                 float stepX = size.Width / duration;
                 float stepY = size.Height / (MaxTemp * 1.0f);
@@ -56,22 +58,21 @@
             for (int i = 0; Plan.Blocks != null && i < Plan.Blocks.Count(); i++)
             {
                 var block = Plan.Blocks[i];
-                string currentBlock = $"{block.TargetTemperature.ToString().PadLeft(4,' ')}°C {block.TemperingDuration.ToString().PadLeft(3, ' ')}min {(int)block.PowerDrain}kW";
+                string currentBlock = $"{block.TargetTemperature.ToString().PadLeft(4, ' ')}°C {block.TemperingDuration.ToString().PadLeft(3, ' ')}min {(int)block.PowerDrain}kW";
                 if (ProgramCounter == i)
                 {
-                    currentBlock += "<<";
+                    currentBlock += " <<<";
                 }
                 g.DrawString(currentBlock, fontSmall, Brushes.Black, new PointF(marginLeft, 13 + fontBig.Height + (i * (fontSmall.Height + 3))));
             }
         }
-             
 
         private void DrawHeatings(Graphics g)
         {
             if (Heatings.Count > 0)
             {
                 var size = g.ClipBounds.Size;
-                DateTime last = DateTime.Now;
+                DateTime last = Measurements.Last().Time;
                 float stepX = size.Width / (float)(last - Start).TotalSeconds;
                 float stepY = (size.Height / MaxTemp) * 10;
 
@@ -79,16 +80,16 @@
                 {
                     float x1 = (float)(Heatings[h].StartTime - Start).TotalSeconds;
                     float x2 = (float)(DateTime.Now - Start).TotalSeconds;
-                    if (h < Heatings.Count-1)
+                    if (h < Heatings.Count - 1)
                     {
                         x2 = (float)(Heatings[h + 1].StartTime - Start).TotalSeconds;
                     }
-                    
+
                     float height = size.Height - ((int)Heatings[h].Power * stepY);
                     float from = x1 * stepX;
                     float lenght = (x2 * stepX) - from;
                     var r = new RectangleF(from, height, lenght, size.Height);
-                    g.FillRectangle(Brushes.Lime, r);                    
+                    g.FillRectangle(Brushes.Lime, r);
                 }
             }
         }
@@ -136,13 +137,13 @@
             if (Measurements.Any())
             {
                 DrawHeatings(g);
-                DrawTemperatures(g);                
+                DrawTemperatures(g);
 
                 Rectangle CurrentTemperatureBox = new Rectangle((int)g.ClipBounds.Width - 204, 2, 202, 42);
-                
+
                 g.FillRectangle(Brushes.Yellow, CurrentTemperatureBox);
                 g.DrawRectangle(new Pen(Brushes.Black, 2), CurrentTemperatureBox);
-                g.DrawString(Measurements.Last().Temperature + "°C", fontBig, Brushes.Red, CurrentTemperatureBox, center);                
+                g.DrawString(Temperature + "°C", fontBig, Brushes.Red, CurrentTemperatureBox, center);
             }
             DrawProgram(g);
             g.Flush();

@@ -6,7 +6,7 @@
 
     public static class Extensions
     {
-        private static readonly string DateTimeFormat = "yyyy-MM-dd-HH-mm-ss";
+        private static readonly string DateTimeFormat = "yyyy-M-d-H-m-s";
         private static readonly string PlanFormat = "(.*\\|)(\\d+\\*\\d+\\*\\d+;)*(\\d+\\*\\d+\\*\\d+)$";
 
         /// <summary>

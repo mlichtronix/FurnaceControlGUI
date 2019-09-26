@@ -14,22 +14,22 @@
         private Furnace F;
         private Logger L = new Logger();
         private Display D = new Display();
-        private List<FiringPlan> P = new List<FiringPlan> ();
-        
+        private List<FiringPlan> P = new List<FiringPlan>();
+
         public MainForm()
         {
             InitializeComponent();
             F = new Furnace(L);
             F.PropertyChanged += new PropertyChangedEventHandler(UptateValues);
             L.PropertyChanged += UpdateLogBox;
-            L.Add("Logging started");            
+            L.Add("Logging started");
             RefreshDevices(this, null);
             LoadProgramsFromSettings();
         }
 
         private void LoadProgramsFromSettings()
         {
-            if(string.IsNullOrEmpty(Properties.Settings.Default.Plans))
+            if (string.IsNullOrEmpty(Properties.Settings.Default.Plans))
             {
                 return;
             }
@@ -70,9 +70,11 @@
                         UpdateStatus();
                         break;
                     case "Temperature":
-                        var m = new Measurement(F.Temperature, DateTime.Now);
-                        D.Measurements.Add(m);                        
-                        // L.Add($"Temperature update: {m.Temperature} °C");
+                        D.Temperature = F.Temperature;
+                        if (!F.Halted)
+                        {
+                            D.Measurements.Add(new Measurement(F.Temperature, DateTime.Now));
+                        }
                         break;
                     case "ProgramCounter":
                         D.ProgramCounter = F.ProgramCounter;
@@ -96,7 +98,7 @@
 
         private void InvokeUI(Action a)
         {
-            if(IsHandleCreated) { BeginInvoke(new MethodInvoker(a)); }
+            if (IsHandleCreated) { BeginInvoke(new MethodInvoker(a)); }
         }
 
         private void UpdateLogBox(object sender, PropertyChangedEventArgs e)
@@ -147,7 +149,7 @@
             switch (F.Status)
             {
                 case SerialStatus.Connected:
-                    F.DisconnectDevice();                    
+                    F.DisconnectDevice();
                     break;
                 case SerialStatus.Disconnected:
                     F.ConnectDevice((string)DeviceBox.SelectedItem);
@@ -170,7 +172,7 @@
                         break;
 
                     case SerialStatus.Connected:
-                        StartHaltButton.Enabled = true;                        
+                        StartHaltButton.Enabled = true;
                         ConnectButton.Text = "Disconnect";
                         L.Add("Device is connected.");
                         D.Start = DateTime.Now;
@@ -201,7 +203,7 @@
 
         private void UpdateStatus(object sender, EventArgs e)
         {
-            F.UpdateStatus();            
+            F.UpdateStatus();
         }
 
         private void UpdateImage(object sender, PaintEventArgs e)
@@ -209,7 +211,7 @@
             Graphics img = e.Graphics;
             img.SmoothingMode = SmoothingMode.AntiAlias;
             img.CompositingQuality = CompositingQuality.HighQuality;
-            img.InterpolationMode = InterpolationMode.HighQualityBicubic;            
+            img.InterpolationMode = InterpolationMode.HighQualityBicubic;
             D.Draw(img);
         }
 
@@ -239,13 +241,13 @@
 
         private void AddNewProgram(object sender, EventArgs e)
         {
-            PlanDesigner designer = new PlanDesigner(new FiringPlan(), GetExistingPlanNames());            
+            PlanDesigner designer = new PlanDesigner(new FiringPlan(), GetExistingPlanNames());
             if (designer.ShowDialog() == DialogResult.OK)
             {
                 P.Add(designer.plan);
                 UpdateAvailablePrograms();
                 SaveSettings();
-            }            
+            }
         }
 
         private void UpdateAvailablePrograms()

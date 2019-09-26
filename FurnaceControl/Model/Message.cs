@@ -11,9 +11,9 @@
         public static readonly string DataSeparator = ":";
 
         /// <summary>
-        /// Message TypeCode: "(200|300|400|500|600|650|700|800|900|990|995|999)"
+        /// Message TypeCode: "(200|300|400|500|600|650|700|800|900|950|990|995|999)"
         /// </summary>
-        public static readonly string ThreeNumbers = "(200|300|400|500|600|650|700|800|900|990|995|999)";
+        public static readonly string ThreeNumbers = "(200|300|400|500|600|650|700|800|900|950|990|995|999)";
 
         /// <summary>
         /// Message content (all until end of line): ".*$"

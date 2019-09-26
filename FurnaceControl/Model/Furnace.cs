@@ -13,7 +13,7 @@
         // Internal fields
         private bool halted = true;
         private int temperature = -1;
-        private int programCounter = -1;        
+        private int programCounter = -1;
         private FiringPlan program = null;
         private Wattage heating = Wattage.Power0kW;
         private SerialStatus status = SerialStatus.Disconnected;
@@ -64,7 +64,7 @@
             private set
             {
                 if (status == value) { return; }
-                status = value;                
+                status = value;
                 OnPropertyChanged("Status");
             }
         }
@@ -122,19 +122,19 @@
                 }
                 catch (TimeoutException)
                 {
-                    Status = SerialStatus.NotResponding;                    
+                    Status = SerialStatus.NotResponding;
                     return;
                 }
                 catch (Exception ex)
                 {
                     L.Add($"SendMessage: [{ex.Message}]");
-                }                
+                }
             }
             Status = SerialStatus.Disconnected;
         }
 
         private void ProcessReceivedMessage(Message msg)
-        {            
+        {
             switch (msg.Type)
             {
                 case MessageType.HandShake:         // 200
@@ -166,6 +166,7 @@
                     OnPropertyChanged(msg.Type.ToString());
                     break;
                 case MessageType.Error:             // 990
+                    L.Add("Error: " + msg.Data);
                     break;
                 case MessageType.Heating:           // 950
                     Heating = (Wattage)int.Parse(msg.Data);
@@ -173,7 +174,10 @@
                 case MessageType.Halt:              // 999
                     Halted = true;
                     L.Add("Furnace is Halted");
-                    break;                
+                    break;
+                case MessageType.LogMessage:
+                    L.Add("Log: " + msg.Data);
+                    break;
                 default:
                     L.Add($"Invalid Message Type: [{msg.Data}]");
                     break;
@@ -197,7 +201,7 @@
             var time = DateTime.Now;
             try
             {
-                string content = ((SerialPort)sender).ReadLine();
+                string content = ((SerialPort)sender).ReadLine().Trim();
                 ProcessReceivedMessage(Message.FromStringAndDate(content, time));
             }
             catch (TimeoutException ex)
@@ -229,7 +233,7 @@
                 {
                     comport.Open();
                     comport.ReadExisting(); // Clear previous communication
-                }                
+                }
                 SyncCurrentStatus();
             }
             catch
@@ -241,8 +245,8 @@
 
         public void UpdateStatus()
         {
-            SendMessage(MessageFactory.GetTemperature);
             SendMessage(MessageFactory.GetPcStatus);
+            SendMessage(MessageFactory.GetTemperature);
         }
 
         public void DisconnectDevice()
@@ -253,7 +257,7 @@
 
         public void Halt()
         {
-            SendMessage(MessageFactory.Halt);            
+            SendMessage(MessageFactory.Halt);
         }
 
         internal void SetTime(DateTime t)
@@ -267,7 +271,7 @@
         }
 
         public void Start(DateTime t)
-        {        
+        {
             SendMessage(new Message(MessageType.Start, t.ToFurnaceString()));
         }
     }

@@ -117,8 +117,8 @@ void DS1302::init(int seconds, int minutes, int hours, int dayOfMonth, int month
 	dsDateTime.CH         = 0;
 	dsDateTime.Minutes    = bin2bcd_l(minutes);
 	dsDateTime.Minutes10  = bin2bcd_h(minutes);
-	dsDateTime.Hour		= bin2bcd_l(hours);
-	dsDateTime.Hour10		= bin2bcd_h(hours);
+	dsDateTime.h24.Hour		= bin2bcd_l(hours);
+	dsDateTime.h24.Hour10		= bin2bcd_h(hours);
 	dsDateTime.Date       = bin2bcd_l(dayOfMonth);
 	dsDateTime.Date10     = bin2bcd_h(dayOfMonth);
 	dsDateTime.Month      = bin2bcd_l(month);
@@ -141,7 +141,7 @@ DateTime DS1302::Now(void)
 	date.Year    = 2000 + bcd2bin(dsDateTime.Year10, dsDateTime.Year);
 	date.Month   = bcd2bin(dsDateTime.Month10, dsDateTime.Month);
 	date.Day     = bcd2bin(dsDateTime.Date10, dsDateTime.Date);
-	date.Hours   = bcd2bin(dsDateTime.Hour10, dsDateTime.Hour);
+	date.Hours   = bcd2bin(dsDateTime.h24.Hour10, dsDateTime.h24.Hour);
 	date.Minutes = bcd2bin(dsDateTime.Minutes10, dsDateTime.Minutes);
 	date.Seconds = bcd2bin(dsDateTime.Seconds10, dsDateTime.Seconds);
 	return date;
