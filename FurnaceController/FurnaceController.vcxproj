@@ -118,11 +118,13 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="DS1302.h" />
+    <ClInclude Include="Classes.h" />
     <ClInclude Include="stddef.h" />
     <ClInclude Include="__vm\.FurnaceController.vsarduino.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DS1302.cpp" />
+    <ClCompile Include="Classes.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

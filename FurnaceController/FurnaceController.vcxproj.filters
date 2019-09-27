@@ -23,8 +23,12 @@
     <ClInclude Include="DS1302.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Classes.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DS1302.cpp" />
+    <ClCompile Include="Classes.cpp" />
   </ItemGroup>
 </Project>

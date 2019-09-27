@@ -8,13 +8,13 @@
 #include <SPI.h>
 #include <Wire.h>
 #include "DS1302.h"
+#include "Classes.h"
 #include <LinkedList.h>
 #include <Adafruit_MCP9600.h>
 #include <Adafruit_I2CDevice.h>
 #include <Adafruit_I2CRegister.h>
 
 // Definitions ---------------------
-#define I2C_ADDRESS		(0x67)	// Adress for MCP9600 Thermocouple Breakout module
 #define BAUDS			9600	// Serial port Baud Rate
 #define TRESHOLD		5		// Unde-rtemeperature limit
 #define DATESEPARATOR	'-'		// DateTime Separating Character
@@ -49,40 +49,9 @@ int pinRight	= 4;	// Push Button Right
 int pinOk		= 3;	// Push Button Left
 
 // Internal variables ----------------------
-DS1302 rtc;				// Reali Time Module
+DS1302 rtc;				// Real Time Module
 Adafruit_MCP9600 mcp;	// Thermocouple AD module
-Adafruit_I2CDevice i2c_dev = Adafruit_I2CDevice(I2C_ADDRESS);
-
-// One node of Firing program
-class ProgramBlock
-{
-public:
-	// Heating coils engagement configuration
-	enum Wattage
-	{
-		Wattage0kW  =  0,	// Heating Off
-		Wattage10kW = 10,	// Coils engagement configuration delta	| A
-		Wattage30kW = 30,	// Coils engagement configuration star	| Y
-	};
-
-	// Target Temperature
-	int temp = 0;
-
-	// Tempering duration
-	int duration = 0;
-
-	// Maximum power drain configuration
-	Wattage drain;
-
-	// Target temperature is reached
-	bool isTargetReached(int t);
-
-	ProgramBlock();
-	~ProgramBlock();
-};
-
-ProgramBlock::ProgramBlock() {}		// Implicit Constructor for LinkedList needs
-ProgramBlock::~ProgramBlock() {}	// Implicit Destructor for LinkedList needs
+LinkedList<ProgramBlock> * Program = new LinkedList<ProgramBlock>();	// Currently set Firing Program
 
 // FiringProgram values:
 DateTime ScheduleTime;			// Time Schedule of firing
@@ -97,25 +66,6 @@ int programCounter = -1;		// Id of active program node
 int remainingTime = 0;			// Remaining time of tempering period of current node
 int currentTemp = 0;			// Current temperature in furnace
 int button = 0;					// Pressed button
-
-// Check if temperature in furnace is in range of current block target temperature
-bool ProgramBlock::isTargetReached(int t)
-{
-	return (t >= temp - TRESHOLD && t <= temp);
-}
-
-class FiringProgram
-{
-public:
-	// Program name
-	String Name;
-
-	// Program nodes (Temperature, Duration, Wattage)
-	LinkedList<ProgramBlock> Blocks;
-};
-
-// Currently set Firing Program
-LinkedList<ProgramBlock> * Program = new LinkedList<ProgramBlock>();
 
 void SetPlan()
 {
@@ -153,7 +103,7 @@ void UpdateRemainingTime()
 		ProgramBlock block = Program->get(programCounter);
 
 		// Is target temeperature reached?
-		if (block.isTargetReached(currentTemp))
+		if (block.isTargetReached(currentTemp, TRESHOLD))
 		{
 			// Set tempering values
 			tempering = true;							// Set Tempering mode
@@ -168,7 +118,6 @@ void UpdateRemainingTime()
 		}
 	}
 }
-
 
 void setup()
 {
@@ -506,7 +455,7 @@ void SetRelays()
 				}
 				else
 				{
-					SetHeating(ProgramBlock::Wattage10kW);	// Set Low Power					
+					SetHeating(ProgramBlock::Wattage10kW);	// Set Low Power
 				}
 			}
 		}
