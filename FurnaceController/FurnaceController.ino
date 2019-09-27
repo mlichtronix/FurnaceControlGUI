@@ -49,9 +49,9 @@ int pinRight	= 4;	// Push Button Right
 int pinOk		= 3;	// Push Button Left
 
 // Internal variables ----------------------
-DS1302 rtc;				// Real Time Module
-Adafruit_MCP9600 mcp;	// Thermocouple AD module
-LinkedList<ProgramBlock> * Program = new LinkedList<ProgramBlock>();	// Currently set Firing Program
+DS1302 rtc;					// Real Time Module
+Adafruit_MCP9600 mcp;		// Thermocouple AD module
+FiringProgram Program;	// Currently set Firing Program
 
 // FiringProgram values:
 DateTime ScheduleTime;			// Time Schedule of firing
@@ -73,7 +73,7 @@ void SetPlan()
 	if (halted || rtc.Now().ToSeconds() < ScheduleTime.ToSeconds() || remainingTime > 0) { return; }
 	
 	// Set Next Block if available
-	if (programCounter + 1 < Program->size())
+	if (programCounter + 1 < Program.Size())
 	{
 		tempering = false;
 		programCounter++;
@@ -100,7 +100,7 @@ void UpdateRemainingTime()
 	}
 	else
 	{
-		ProgramBlock block = Program->get(programCounter);
+		ProgramBlock block = Program.get(programCounter);
 
 		// Is target temeperature reached?
 		if (block.isTargetReached(currentTemp, TRESHOLD))
@@ -180,24 +180,6 @@ bool isNumber(String data)
 	return true;
 }
 
-// Convert Current Firing Program to String reperesentation
-String ProgramToString()
-{
-	String nameDate = ProgramName + "|";
-	String blocks = "";
-	int s = Program->size();
-	for (int i = 0; i < s; i++)
-	{
-		ProgramBlock block = Program->get(i);
-		blocks += String(block.temp) + "*" + String(block.duration) + "*" + String(block.drain);
-		if (i + 1 < s)
-		{
-			blocks += ";";
-		}
-	}
-	return nameDate + blocks;
-}
-
 // Split string into LinkedList<String> by delimiter character
 LinkedList<String> Split(String data, char delimiter)
 {
@@ -236,7 +218,7 @@ bool ParseProgram(String data)
 
 	// Split blocks
 	LinkedList<String> blocksStr = Split(headTail.get(1), ';');
-	LinkedList<ProgramBlock> *blocks = new LinkedList<ProgramBlock>();
+	LinkedList<ProgramBlock> blocks = LinkedList<ProgramBlock>();
 
 	// Process all blocks
 	for (int i = 0; i < blocksStr.size(); i++)
@@ -255,15 +237,16 @@ bool ParseProgram(String data)
 			block.temp = values.get(0).toInt();
 			block.duration = values.get(1).toInt();
 			block.drain = ProgramBlock::Wattage(values.get(2).toInt());
-			blocks->add(block);
+			blocks.add(block);
 		}
 		else
 		{
 			return false; // Error occured
 		}
 	}
-	Program = blocks;
-	ProgramName = progName;
+
+	Program.Blocks = blocks;	
+	Program.Name = progName;
 	return true; // Program is parsed correctly
 }
 
@@ -339,7 +322,7 @@ void Response(int t, String p)
 
 	case GetCurrentProgram:
 		// 600 - Return current program
-		SendMessage(t, ProgramToString());
+		SendMessage(t, Program.ToString());
 		return;
 
 	case SetProgram:
@@ -429,7 +412,7 @@ void SetRelays()
 	}
 
 	// Select current program block
-	ProgramBlock block = Program->get(programCounter);
+	ProgramBlock block = Program.get(programCounter);
 
 	// Temperature reached target value?
 	if (currentTemp >= block.temp)

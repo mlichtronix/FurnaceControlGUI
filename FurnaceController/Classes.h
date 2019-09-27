@@ -23,6 +23,7 @@ public:
 
 	// Check if temperature in furnace is in range of current block target temperature
 	bool isTargetReached(int t, int treshold);
+
 	ProgramBlock();
 	~ProgramBlock();
 };
@@ -35,4 +36,12 @@ public:
 
 	// Program nodes (Temperature, Duration, Wattage)
 	LinkedList<ProgramBlock> Blocks;
+
+	// Converts FiringProgram to String reperesentation
+	String ToString();	
+	ProgramBlock get(int index);
+	int Size();
+
+	FiringProgram();
+	~FiringProgram();
 };
