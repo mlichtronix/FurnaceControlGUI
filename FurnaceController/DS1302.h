@@ -1,8 +1,10 @@
+#pragma once
 #ifndef DS1302_H
 #define DS1302_H
 
 #include <stdint.h>
 #include <Arduino.h>
+#include "DateTime.h"
 
 #define DS1302_SCLK_PIN 42   // CLOCK : 'CLK'
 #define DS1302_IO_PIN   43   // DATA :  'DAT'
@@ -55,36 +57,6 @@
 
 #define AM  0
 #define PM  1
-
-
-class DateTime
-{
-  public:
-    int Year = 0;
-    int Month = 0;
-    int Day = 0;
-    int Hours = 0;
-    int Minutes = 0;
-    int Seconds = 0;
-
-    String ToFurnaceString(void)
-    {
-      return String(Year) + "-" + String(Month) + "-" + String(Day) + "-" + String(Hours) + "-" + String(Minutes) + "-" + String(Seconds);
-    }
-
-    long ToSeconds(void)
-    {
-      long Y =  long(Year    * 31556926);
-      long M =  long(Month   * 2629744);
-      long D =  long(Day     * 86400);
-      long H =  long(Hours   * 3600);
-      long E =  long(Minutes * 60);
-      return long(Y + M + D + H + E + Seconds);
-    }
-
-};
-
-
 
 class DS1302
 {

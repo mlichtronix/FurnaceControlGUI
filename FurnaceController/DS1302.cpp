@@ -1,9 +1,6 @@
 #include "DS1302.h"
 
-DS1302::DS1302()
-{
-	// 
-}
+DS1302::DS1302() {}
 
 void DS1302::_DS1302_start(void)
 {

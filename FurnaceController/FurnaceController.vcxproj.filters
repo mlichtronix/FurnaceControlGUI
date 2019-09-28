@@ -23,12 +23,21 @@
     <ClInclude Include="DS1302.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Classes.h">
+    <ClInclude Include="DateTime.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="FiringProgram.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ProgramBlock.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DS1302.cpp" />
-    <ClCompile Include="Classes.cpp" />
+    <ClCompile Include="DateTime.cpp" />
+    <ClCompile Include="FirigProgram.cpp" />
+    <ClCompile Include="ProgramBlock.cpp" />
+    <ClCompile Include="Extensions.h" />
   </ItemGroup>
 </Project>

@@ -5,11 +5,15 @@
 */
 
 // Includes -----------------------
+#pragma once
 #include <SPI.h>
 #include <Wire.h>
 #include "DS1302.h"
-#include "Classes.h"
+#include <Arduino.h>
+#include "DateTime.h"
 #include <LinkedList.h>
+#include "ProgramBlock.h"
+#include "FiringProgram.h"
 #include <Adafruit_MCP9600.h>
 #include <Adafruit_I2CDevice.h>
 #include <Adafruit_I2CRegister.h>
@@ -50,13 +54,14 @@ int pinOk		= 3;	// Push Button Left
 
 // Internal variables ----------------------
 DS1302 rtc;					// Real Time Module
-Adafruit_MCP9600 mcp;		// Thermocouple AD module
-FiringProgram Program;	// Currently set Firing Program
+Adafruit_MCP9600 tcm;		// Thermocouple AD module
+FiringProgram * Program;	// Currently set Firing Program
+
+#include "Extensions.h"
 
 // FiringProgram values:
 DateTime ScheduleTime;			// Time Schedule of firing
 ProgramBlock::Wattage wattage;	// Maximum heating engagement of current node
-String ProgramName = "";		// Name of current set firing program
 long temperingEnd = 0;			// End of current tempering in seconds
 bool tempering = false;			// Target Temperature is reached and furnace is in tempering mode
 bool halted = true;				// System is halted
@@ -73,7 +78,7 @@ void SetPlan()
 	if (halted || rtc.Now().ToSeconds() < ScheduleTime.ToSeconds() || remainingTime > 0) { return; }
 	
 	// Set Next Block if available
-	if (programCounter + 1 < Program.Size())
+	if (programCounter + 1 < Program->size())
 	{
 		tempering = false;
 		programCounter++;
@@ -100,7 +105,7 @@ void UpdateRemainingTime()
 	}
 	else
 	{
-		ProgramBlock block = Program.get(programCounter);
+		ProgramBlock block = Program->get(programCounter);
 
 		// Is target temeperature reached?
 		if (block.isTargetReached(currentTemp, TRESHOLD))
@@ -128,21 +133,23 @@ void setup()
 	Serial.begin(BAUDS);
 
 	// MCP9600 A/D Thermal Sensor
-	if (!mcp.begin())
+	if (!tcm.begin())
 	{
 		SendMessage(Error, "Sensor MCP9600 not found!");
 		while (1);
 	}
-	mcp.setADCresolution(MCP9600_ADCRESOLUTION_18);
-	mcp.setThermocoupleType(MCP9600_TYPE_K);
-	mcp.setFilterCoefficient(3);
-	mcp.enable(true);
+	tcm.setADCresolution(MCP9600_ADCRESOLUTION_18);
+	tcm.setThermocoupleType(MCP9600_TYPE_K);
+	tcm.setFilterCoefficient(3);
+	tcm.enable(true);
 
 	// TODO ================================
 	// Display
 	// SD Card
 	// Audio
 	// AC Voltage Sensor
+
+	Program = new FiringProgram();
 }
 
 void loop()
@@ -165,89 +172,6 @@ void SetPins()
 	pinMode(pinLeft, INPUT);
 	pinMode(pinRight, INPUT);
 	pinMode(pinOk, INPUT);
-}
-
-// Check if String contains only numeric values
-bool isNumber(String data)
-{
-	for (int i = 0; i < data.length(); i++)
-	{
-		if (!isDigit(data[i]))
-		{
-			return false;
-		}
-	}
-	return true;
-}
-
-// Split string into LinkedList<String> by delimiter character
-LinkedList<String> Split(String data, char delimiter)
-{
-	LinkedList<String> output = LinkedList<String>();
-	int l = data.length();
-	int last = 0;
-	for (int f = 0; f < l; f++)
-	{
-		for (int t = f; t < l; t++)
-		{
-			if (data[t] == delimiter)
-			{
-				last = t + 1;
-				output.add(data.substring(f, t));
-				f = t;
-				break;
-			}
-		}
-	}
-	if (last < l)
-	{
-		// Add trailning leftovers
-		output.add(data.substring(last));
-	}
-	return output;
-}
-
-// Parse Firing Program from String reperesentation
-bool ParseProgram(String data)
-{
-	// Data example:
-	// "Custom program|400*30*10;960*30*30;1200*60*30"
-
-	LinkedList<String> headTail = Split(data, '|');
-	String progName = headTail.get(0);
-
-	// Split blocks
-	LinkedList<String> blocksStr = Split(headTail.get(1), ';');
-	LinkedList<ProgramBlock> blocks = LinkedList<ProgramBlock>();
-
-	// Process all blocks
-	for (int i = 0; i < blocksStr.size(); i++)
-	{
-		// Split values
-		LinkedList<String> values = Split(blocksStr.get(i), '*');
-
-		// Verify that all values are valid
-		if (values.size() == 3 &&
-			isNumber(values.get(0)) &&
-			isNumber(values.get(1)) &&
-			isNumber(values.get(2)))
-		{
-			// Add new block to program
-			ProgramBlock block;
-			block.temp = values.get(0).toInt();
-			block.duration = values.get(1).toInt();
-			block.drain = ProgramBlock::Wattage(values.get(2).toInt());
-			blocks.add(block);
-		}
-		else
-		{
-			return false; // Error occured
-		}
-	}
-
-	Program.Blocks = blocks;	
-	Program.Name = progName;
-	return true; // Program is parsed correctly
 }
 
 // Read communication from Serial port
@@ -291,64 +215,94 @@ void Response(int t, String p)
 {
 	switch (t)
 	{
-	case GetCurTemperature:
-		// 400 - Return Current Temperature in Furnace
-		SendMessage(t, String(currentTemp));
-		return;
-
-	case GetPcSatus:
-		// 500 - Return Current Program Block number
-		SendMessage(t, String(programCounter));
-		return;
-
-	case Start:
-		// 700 - Set Schedule time
-		ScheduleTime = DateFromString(p);
-		programCounter = -1;
-		halted = false;
-		SendMessage(t, ScheduleTime.ToFurnaceString());
-		return;
-
 	case HandShake:
+	{
 		// 200 - Return ID of this device according official manufacturer documentation
 		SendMessage(t, "CEP-0.5-1150");
 		return;
+	}
 
 	case SetTime:
+	{
 		// 300 - Set RealTime
-		SetRealTime(DateFromString(p));
-		SendMessage(t, rtc.Now().ToFurnaceString());
-		return;
-
-	case GetCurrentProgram:
-		// 600 - Return current program
-		SendMessage(t, Program.ToString());
-		return;
-
-	case SetProgram:
-		// 650 - Set Custom program
-		if (ParseProgram(p))
+		DateTime realtime = DateFromString(p, DATESEPARATOR);
+		if (realtime.WasParsingValid)
 		{
-			SendMessage(t, "Program Set");
+			SetRealTime(realtime);
+			SendMessage(t, rtc.Now().ToFurnaceString());
 		}
 		else
 		{
-			SendMessage(Error, "Canot parse Program!");
+			SendMessage(Error, "Canot convert DateTime from String[" + p + "]");
 		}
 		return;
-
+	}
+	case GetCurTemperature:
+	{
+		// 400 - Return Current Temperature in Furnace
+		SendMessage(t, String(currentTemp));
+		return;
+	}
+	case GetPcSatus:
+	{
+		// 500 - Return Current Program Block number
+		SendMessage(t, String(programCounter));
+		return;
+	}
+	case GetCurrentProgram:
+	{
+		// 600 - Return current program
+		SendMessage(t, Program->ToString());
+		return;
+	}
+	case SetProgram:
+	{
+		// 650 - Set Custom program
+		FiringProgram * tmp = ParseProgram(p);
+		if (tmp->WasParsingValid)
+		{
+			Program = tmp;
+			SendMessage(t, "Program Set [" + Program->ToString() + "]");
+		}
+		else
+		{
+			SendMessage(Error, "Canot parse Program! [" + p + "]");
+		}
+		return;
+	}
+	case Start:
+	{
+		// 700 - Set Schedule time
+		DateTime schedule = DateFromString(p, DATESEPARATOR);
+		if (schedule.WasParsingValid)
+		{
+			halted = false;
+			programCounter = -1;
+			ScheduleTime = schedule;
+			SendMessage(t, ScheduleTime.ToFurnaceString());
+		}
+		else
+		{
+			SendMessage(Error, "Canot convert DateTime from String[" + p + "]");
+		}
+		return;
+	}
 	case Halt:
+	{
 		// 999 - Stop any activity and reset all settings to default position
 		HaltAndReset();
 		return;
 	}
-	SendMessage(Invalid, "Unsupported command: [" + String(t) + ":" + p + "]");
+	default:	
+		SendMessage(Invalid, "Unsupported command: [" + String(t) + ":" + p + "]");
+		break;	
+	}
 }
 
 // Measure Temperature in furnace
 void ReadTemperature()
-{
-	currentTemp = mcp.readThermocouple();
+{	
+	currentTemp = tcm.readThermocouple();
 
 	// Alarm for manually closing smokestack
 	if (!halted && currentTemp >= SMOKESTACKTEMP && smokeStackOpen == true)
@@ -405,14 +359,14 @@ void SetRelays()
 		return;
 	}
 
-	// Update wattage delay if is under maxvalue
-	if (wattageDelay < WATTAGEDELAYMAX)
+	// Select current program block
+	ProgramBlock block = Program->get(programCounter);
+
+	// Update wattage delay for 30kW if is under maxvalue
+	if (block.drain == ProgramBlock::Wattage30kW && wattageDelay < WATTAGEDELAYMAX)
 	{
 		wattageDelay++;
 	}
-
-	// Select current program block
-	ProgramBlock block = Program.get(programCounter);
 
 	// Temperature reached target value?
 	if (currentTemp >= block.temp)
@@ -493,41 +447,6 @@ void PlaySound(String soundName)
 	// TODO: Implement PlaySound from SD Card
 }
 
-// Parse DateTime from string representation
-DateTime DateFromString(String s)
-{
-	LinkedList<String> values = Split(s, DATESEPARATOR);
-	bool allOk = values.size() == 6;	// Is Correct count of parts?
-	if (allOk)
-	{
-		// Check if only numeric characters
-		for (int i = 0; i < values.size(); i++)
-		{
-			if (!isNumber(values.get(i)))
-			{
-				allOk = false;
-				break;
-			}
-		}
-	}
-
-	if (allOk)
-	{
-		// Initialize DateTime values
-		DateTime t;
-		t.Year = values.get(0).toInt();
-		t.Month = values.get(1).toInt();
-		t.Day = values.get(2).toInt();
-		t.Hours = values.get(3).toInt();
-		t.Minutes = values.get(4).toInt();
-		t.Seconds = values.get(5).toInt();
-		return t;
-	}
-
-	// String is not in cerrect format
-	SendMessage(Error, "Canot convert DateTimeString[" + s + "]");
-	return DateTime();
-}
 
 // Set time in RTC module
 void SetRealTime(DateTime t)
