@@ -1,7 +1,7 @@
 # FurnaceControlGUI
 Ceramic Furnace Controll software written in C# (+Arduino code in C++)
 
-## FurnaceControllGUI
+## FurnaceControlGUI
 * Select firing programs and execute them in your furnace
 * Create your own Firing Program with Builtin editor
 * Monitor temperature in real time and save them as documentation
