@@ -1,5 +1,5 @@
 # FurnaceControlGUI
-Ceramic Furnace Controll software written in C# (+Arduino code in C++)
+Ceramic Furnace Control software written in C# (+Arduino code in C++)
 
 ## FurnaceControlGUI
 * Select firing programs and execute them in your furnace
