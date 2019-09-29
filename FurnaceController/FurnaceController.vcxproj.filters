@@ -32,6 +32,9 @@
     <ClInclude Include="ProgramBlock.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="PredefinedPrograms.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DS1302.cpp" />

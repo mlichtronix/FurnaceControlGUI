@@ -169,6 +169,7 @@
                         StartHaltButton.Enabled = false;
                         ConnectButton.Text = "Connect";
                         L.Add("Device is disconnected.");
+                        D.StatusOnline = false;
                         GraphRefresh.Stop();
                         DeviceBox.BackColor = Color.White;
                         break;
@@ -178,6 +179,7 @@
                         ConnectButton.Text = "Disconnect";
                         L.Add("Device is connected.");
                         D.Start = DateTime.Now;
+                        D.StatusOnline = true;
                         UpdateStatus(this, null);
                         GraphRefresh.Start();
                         DeviceBox.BackColor = Color.Lime;
@@ -187,6 +189,7 @@
                         StartHaltButton.Enabled = false;
                         L.Add("Device is not responding!");
                         DeviceBox.BackColor = Color.Orange;
+                        D.StatusOnline = false;
                         break;
 
                     case SerialStatus.WrongProtocol:
@@ -194,6 +197,7 @@
                         L.Add("Device is not compatible!");
                         F.DisconnectDevice();
                         DeviceBox.BackColor = Color.Red;
+                        D.StatusOnline = false;
                         break;
 
                     default:

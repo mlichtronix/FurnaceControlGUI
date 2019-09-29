@@ -8,20 +8,21 @@
 // Check if String contains only numeric values
 bool isNumber(String data)
 {
-	for (int i = 0; i < data.length(); i++)
+	int negative = data.length() > 0 && data[0] == '-' ? 1 : 0;
+	for (int i = negative; i < data.length(); i++)
 	{
 		if (!isDigit(data[i]))
 		{
 			return false;
 		}
-	}
-	return true;
+	}	
+	return data.length() > negative;
 }
 
 // Split string into LinkedList<String> by delimiter character
-LinkedList<String> * SplitString(String data, char separator)
+LinkedList<String> SplitString(String data, char separator)
 {
-	LinkedList<String> * output = new LinkedList<String>();
+	LinkedList<String> output = LinkedList<String>();
 	int l = data.length();
 	int last = 0;
 	for (int f = 0; f < l; f++)
@@ -31,7 +32,7 @@ LinkedList<String> * SplitString(String data, char separator)
 			if (data[t] == separator)
 			{
 				last = t + 1;
-				output->add(data.substring(f, t));
+				output.add(data.substring(f, t));
 				f = t;
 				break;
 			}
@@ -40,7 +41,7 @@ LinkedList<String> * SplitString(String data, char separator)
 	if (last < l)
 	{
 		// Add trailning leftovers
-		output->add(data.substring(last));
+		output.add(data.substring(last));
 	}
 	return output;
 }
@@ -50,14 +51,14 @@ DateTime DateFromString(String s, char separator)
 {
 	DateTime time;
 	time.WasParsingValid = false;
-	LinkedList<String> * values = SplitString(s, separator);
-	bool allOk = values->size() == 6;	// Is Correct count of parts?
+	LinkedList<String> values = SplitString(s, separator);
+	bool allOk = values.size() == 6;	// Is Correct count of parts?
 	if (allOk)
 	{
 		// Check if only numeric characters
-		for (int i = 0; i < values->size(); i++)
+		for (int i = 0; i < values.size(); i++)
 		{
-			if (!isNumber(values->get(i)))
+			if (!isNumber(values.get(i)))
 			{
 				allOk = false;
 				break;
@@ -66,17 +67,16 @@ DateTime DateFromString(String s, char separator)
 		if (allOk)
 		{
 			// Initialize DateTime values
-			time.Year = values->get(0).toInt();
-			time.Month = values->get(1).toInt();
-			time.Day = values->get(2).toInt();
-			time.Hours = values->get(3).toInt();
-			time.Minutes = values->get(4).toInt();
-			time.Seconds = values->get(5).toInt();
+			time.Year = values.get(0).toInt();
+			time.Month = values.get(1).toInt();
+			time.Day = values.get(2).toInt();
+			time.Hours = values.get(3).toInt();
+			time.Minutes = values.get(4).toInt();
+			time.Seconds = values.get(5).toInt();
 			time.WasParsingValid = true;
 		}
 	}
-	values->clear();
-	delete values;
+	values.clear();
 	return time;
 }
 
@@ -88,41 +88,42 @@ FiringProgram * ParseProgram(String data)
 
 	FiringProgram * p = new FiringProgram();
 	p->WasParsingValid = false;
+	Serial.println(data);
+	LinkedList<String> headTail = SplitString(data, '|');
+	p->Name = headTail.get(0);
+	//headTail->clear();
+	//delete headTail;
 
-	LinkedList<String> * headTail = SplitString(data, '|');
-	p->Name = headTail->get(0);
 	// Split blocks
-	LinkedList<String> * blocksStr = SplitString(headTail->get(1), ';');
-	headTail->clear();
-	delete headTail;
-
+	LinkedList<String> blocksStr = SplitString(headTail.get(1), ';');
 	LinkedList<ProgramBlock> * blocks = new LinkedList<ProgramBlock>();
 	// Process all blocks
-	for (int i = 0; i < blocksStr->size(); i++)
+	for (int i = 0; i < blocksStr.size(); i++)
 	{
 		// Split values
-		LinkedList<String> * values = SplitString(blocksStr->get(i), '*');
+		LinkedList<String> values = SplitString(blocksStr.get(i), '*');
 		// Verify that all values are valid
-		if (values->size() == 3 &&
-			isNumber(values->get(0)) &&
-			isNumber(values->get(1)) &&
-			isNumber(values->get(2)))
+		if (values.size() == 3 &&
+			isNumber(values.get(0)) &&
+			isNumber(values.get(1)) &&
+			isNumber(values.get(2)))
 		{
 			// Add new block to program
 			ProgramBlock block;
-			block.temp = values->get(0).toInt();
-			block.duration = values->get(1).toInt();
-			block.drain = ProgramBlock::Wattage(values->get(2).toInt());
+			block.temp = values.get(0).toInt();
+			block.duration = values.get(1).toInt();
+			block.drain = ProgramBlock::Wattage(values.get(2).toInt());
 			blocks->add(block);
 		}
 		else
 		{
-
+			//blocksStr->clear();
+			//delete blocksStr;
 			return p; // Error occured
 		}
 	}
-	blocksStr->clear();
-	delete blocksStr;
+	//blocksStr->clear();
+	//delete blocksStr;
 	
 	// Initialise new values
 	p->Blocks = blocks;

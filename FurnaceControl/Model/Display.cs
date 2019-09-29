@@ -19,9 +19,17 @@
         public FiringPlan Plan { get; set; } = new FiringPlan();
         public bool SmokeStackClosed { get; set; } = false;
         public int CurrentTemperature { get; set; } = 0;
+        public bool StatusOnline { get; set; } = false;
         public int ProgramCounter { get; set; } = -1;
         public DateTime Start { get; set; }
-        public DateTime LastRecordTime
+
+        // Constructor
+        public Display() { }
+
+        // Private Methods
+
+        // Get time of last recorded activity
+        private DateTime LastRecordTime
         {
             get
             {
@@ -44,10 +52,7 @@
             }
         }
 
-        // Constructor
-        public Display() { }
-
-        // Private Methods
+        // Draw Line of temperatures in time
         private void DrawTemperatures(Graphics g)
         {
             if (Measurements.Count > 1)
@@ -66,12 +71,14 @@
                     GraphPoints.Add(new PointF(x * stepX, size.Height - (m.Temperature * stepY)));
                 }
                 var LinePen = new Pen(Brushes.Red, 3);
-                g.DrawLines(LinePen, GraphPoints.ToArray());
+                //g.DrawLines(LinePen, GraphPoints.ToArray());
+                g.DrawCurve(LinePen, GraphPoints.ToArray());
                 var lp = GraphPoints.Last();
                 g.FillEllipse(Brushes.Red, new RectangleF(lp.X - 5, lp.Y - 5, 10, 10));
             }
         }
 
+        // Draw list of Program Blocks
         private void DrawProgram(Graphics g)
         {
             if (Plan == null) { return; }
@@ -154,22 +161,31 @@
 
         private void DrawSmokestack(Graphics g)
         {
-            g.DrawImage(SmokeStackClosed?Properties.Resources.SmokeStackClosed:Properties.Resources.SmokeStackOpen, (int)g.ClipBounds.Width - 64, 64);
+            if (StatusOnline)
+            {
+                g.DrawImage(SmokeStackClosed ? Properties.Resources.SmokeStackClosed : Properties.Resources.SmokeStackOpen, (int)g.ClipBounds.Width - 64, 64);
+            }
+        }
+
+        private void DrawCurentRemperature(Graphics g)
+        {
+            if (StatusOnline)
+            {
+                Rectangle CurrentTemperatureBox = new Rectangle((int)g.ClipBounds.Width - 204, 2, 202, 50);
+                g.FillRectangle(Brushes.Yellow, CurrentTemperatureBox);
+                g.DrawRectangle(new Pen(Brushes.Black, 2), CurrentTemperatureBox);
+                g.DrawString(CurrentTemperature + " °C", fontBig, Brushes.Red, CurrentTemperatureBox, center);
+            }
         }
 
         // Public Methods
         public void Draw(Graphics g)
         {
             DrawGrid(g);
-            if (Heatings.Any()) { DrawHeatings(g); }
-            if (Measurements.Any()) { DrawTemperatures(g); }
-
-            Rectangle CurrentTemperatureBox = new Rectangle((int)g.ClipBounds.Width - 204, 2, 202, 50);
-            g.FillRectangle(Brushes.Yellow, CurrentTemperatureBox);
-            g.DrawRectangle(new Pen(Brushes.Black, 2), CurrentTemperatureBox);
-            g.DrawString(CurrentTemperature + " °C", fontBig, Brushes.Red, CurrentTemperatureBox, center);
-
+            DrawHeatings(g);
+            DrawTemperatures(g);
             DrawProgram(g);
+            DrawCurentRemperature(g);
             DrawSmokestack(g);
             g.Flush();
         }

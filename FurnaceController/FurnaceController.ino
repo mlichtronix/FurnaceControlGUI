@@ -56,8 +56,10 @@ int pinOk		= 3;	// Push Button Left
 DS1302 rtc;					// Real Time Module
 Adafruit_MCP9600 tcm;		// Thermocouple AD module
 FiringProgram * Program;	// Currently set Firing Program
+// LinkedList<FiringProgram*> * PredefinedPrograms;	// All predefined programs
 
 #include "Extensions.h"
+#include "PredefinedPrograms.h"
 
 // FiringProgram values:
 DateTime ScheduleTime;			// Time Schedule of firing
@@ -148,8 +150,6 @@ void setup()
 	// SD Card
 	// Audio
 	// AC Voltage Sensor
-
-	Program = new FiringProgram();
 }
 
 void loop()
@@ -204,98 +204,112 @@ void ReadSerial()
 // Send message over Srial Port
 void SendMessage(int t, String msg)
 {
-	if (Serial)
+	if (Serial && Serial.availableForWrite())
 	{
 		Serial.println(String(t) + ":" + msg);
 	}
 }
 
 // response to commands from Serial port
+// @param t - MessageTypeCode
+// @param p - Additional Parameters
 void Response(int t, String p)
 {
 	switch (t)
 	{
-	case HandShake:
-	{
-		// 200 - Return ID of this device according official manufacturer documentation
-		SendMessage(t, "CEP-0.5-1150");
-		return;
+		case HandShake:
+		{
+			// 200 - Return ID of this device according official manufacturer documentation
+			SendMessage(t, "CEP-0.5-1150");
+			return;
+		}
+		case SetTime:
+		{
+			// 300 - Set RealTime
+			DateTime realtime = DateFromString(p, DATESEPARATOR);
+			if (realtime.WasParsingValid)
+			{
+				SetRealTime(realtime);
+				SendMessage(t, rtc.Now().ToFurnaceString());
+			}
+			else
+			{
+				SendMessage(Error, "Canot convert DateTime from String[" + p + "]");
+			}
+			return;
+		}
+		case GetCurTemperature:
+		{
+			// 400 - Return Current Temperature in Furnace
+			SendMessage(t, String(currentTemp));
+			return;
+		}
+		case GetPcSatus:
+		{
+			// 500 - Return Current Program Block number
+			SendMessage(t, String(programCounter));
+			return;
+		}
+		case GetCurrentProgram:
+		{
+			// 600 - Return current program
+			SendMessage(t, Program->ToString());
+			return;
+		}
+		case SetProgram:
+		{
+			SetProgramFromString(p);
+			return;
+		}
+		case Start:
+		{
+			// 700 - Set Schedule time
+			DateTime schedule = DateFromString(p, DATESEPARATOR);
+			if (schedule.WasParsingValid)
+			{
+				halted = false;
+				programCounter = -1;
+				ScheduleTime = schedule;
+				SendMessage(t, ScheduleTime.ToFurnaceString());
+			}
+			else
+			{
+				SendMessage(Error, "Canot convert DateTime from String[" + p + "]");
+			}
+			return;
+		}
+		case Halt:
+		{
+			// 999 - Stop any activity and reset all settings to default position
+			HaltAndReset();
+			return;
+		}
+		default:
+		{
+			SendMessage(Invalid, "Unsupported command: [" + String(t) + ":" + p + "]");
+			break;
+		}
 	}
+}
 
-	case SetTime:
+// Manual selection using builtin keys
+void SetPredefinedProgram(int index) 
+{
+	SetProgramFromString(predefined[index]);
+}
+
+void SetProgramFromString(String p)
+{
+	// 650 - Set Custom program
+	FiringProgram * tmp = ParseProgram(p);
+	if (tmp->WasParsingValid)
 	{
-		// 300 - Set RealTime
-		DateTime realtime = DateFromString(p, DATESEPARATOR);
-		if (realtime.WasParsingValid)
-		{
-			SetRealTime(realtime);
-			SendMessage(t, rtc.Now().ToFurnaceString());
-		}
-		else
-		{
-			SendMessage(Error, "Canot convert DateTime from String[" + p + "]");
-		}
-		return;
+		Program = tmp;
+		SendMessage(SetProgram, "Program set to: [" + Program->Name + "]");
 	}
-	case GetCurTemperature:
+	else
 	{
-		// 400 - Return Current Temperature in Furnace
-		SendMessage(t, String(currentTemp));
-		return;
-	}
-	case GetPcSatus:
-	{
-		// 500 - Return Current Program Block number
-		SendMessage(t, String(programCounter));
-		return;
-	}
-	case GetCurrentProgram:
-	{
-		// 600 - Return current program
-		SendMessage(t, Program->ToString());
-		return;
-	}
-	case SetProgram:
-	{
-		// 650 - Set Custom program
-		FiringProgram * tmp = ParseProgram(p);
-		if (tmp->WasParsingValid)
-		{
-			Program = tmp;
-			SendMessage(t, "Program Set [" + Program->ToString() + "]");
-		}
-		else
-		{
-			SendMessage(Error, "Canot parse Program! [" + p + "]");
-		}
-		return;
-	}
-	case Start:
-	{
-		// 700 - Set Schedule time
-		DateTime schedule = DateFromString(p, DATESEPARATOR);
-		if (schedule.WasParsingValid)
-		{
-			halted = false;
-			programCounter = -1;
-			ScheduleTime = schedule;
-			SendMessage(t, ScheduleTime.ToFurnaceString());
-		}
-		else
-		{
-			SendMessage(Error, "Canot convert DateTime from String[" + p + "]");
-		}
-		return;
-	}
-	case Halt:
-	{
-		// 999 - Stop any activity and reset all settings to default position
-		HaltAndReset();
-		return;
-	}
-	default:	
-		SendMessage(Invalid, "Unsupported command: [" + String(t) + ":" + p + "]");
-		break;	
+		SendMessage(Error, "Canot parse Program! [" + p + "]");
 	}
 }
 
