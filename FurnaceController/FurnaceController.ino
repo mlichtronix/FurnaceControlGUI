@@ -6,6 +6,7 @@
 
 // Includes -----------------------
 #pragma once
+#include "Definitions.h";
 #include <SPI.h>
 #include <Wire.h>
 #include "DS1302.h"
@@ -18,46 +19,12 @@
 #include <Adafruit_I2CDevice.h>
 #include <Adafruit_I2CRegister.h>
 
-// Definitions ---------------------
-#define BAUDS			9600	// Serial port Baud Rate
-#define TRESHOLD		5		// Unde-rtemeperature limit
-#define DATESEPARATOR	'-'		// DateTime Separating Character
-#define WATTAGEDELAYMAX	5000	// Maximum heating delay cycles
-#define SMOKESTACKTEMP	400		// Temperature when it is necessary to close smokestack
-
-// Message Type Codes --------------
-#define NoOp				100
-#define HandShake			200
-#define SetTime				300
-#define GetCurTemperature	400
-#define GetPcSatus			500
-#define GetCurrentProgram	600
-#define SetProgram			650
-#define Start				700
-#define CloseSmokeAlert		800
-#define LogMessage			900
-#define Heating				950
-#define Error				990
-#define Invalid				995
-#define Halt				999
-
-// Pinout settings -------------------------
-int pinSpkr		= 11;	// Speaker Pin
-int pinPower	= 10;	// Enable Relay Input
-int pinSupply	= 9;	// LOW 10kW - HIGH 30kW
-int pinHeat		= 8;	// Enable heating
-int pinUp		= 7;	// Push Button Up
-int pinDown		= 6;	// Push Button Down
-int pinLeft		= 5;	// Push Button Left
-int pinRight	= 4;	// Push Button Right
-int pinOk		= 3;	// Push Button Left
-
 // Internal variables ----------------------
 DS1302 rtc;					// Real Time Module
 Adafruit_MCP9600 tcm;		// Thermocouple AD module
 FiringProgram * Program;	// Currently set Firing Program
-// LinkedList<FiringProgram*> * PredefinedPrograms;	// All predefined programs
 
+#include "Button.h"
 #include "Extensions.h"
 #include "PredefinedPrograms.h"
 
@@ -65,6 +32,7 @@ FiringProgram * Program;	// Currently set Firing Program
 DateTime ScheduleTime;			// Time Schedule of firing
 ProgramBlock::Wattage wattage;	// Maximum heating engagement of current node
 long temperingEnd = 0;			// End of current tempering in seconds
+bool enableAudio = true;		// Audio Signalization Enbled
 bool tempering = false;			// Target Temperature is reached and furnace is in tempering mode
 bool halted = true;				// System is halted
 bool smokeStackOpen = true;		// Smokestack status (initially open)
@@ -72,7 +40,7 @@ long wattageDelay = 0;			// Delay counter to full power (Power grid utility safe
 int programCounter = -1;		// Id of active program node
 int remainingTime = 0;			// Remaining time of tempering period of current node
 int currentTemp = 0;			// Current temperature in furnace
-int button = 0;					// Pressed button
+Button button = ButtonNone;		// Pressed button
 
 void SetPlan()
 {
@@ -309,7 +277,7 @@ void SetProgramFromString(String p)
 	}
 	else
 	{
-		SendMessage(Error, "Canot parse Program! [" + p + "]");
+		SendMessage(Error, "Cannot parse Program! [" + p + "]");
 	}
 }
 
@@ -430,23 +398,11 @@ void HaltAndReset()
 // Read pressed buttons
 void ReadKeyboard()
 {
-	button = 0;
-	if (digitalRead(pinUp)) { button = 1; }
-	if (digitalRead(pinDown)) { button = 2; }
-	if (digitalRead(pinLeft)) { button = 3; }
-	if (digitalRead(pinRight)) { button = 4; }
-	if (digitalRead(pinOk)) { button = 5; }
-	if (button > 0) { delay(250); }
-}
-
-// Navigate trough menu on LCD display
-void ConsumeKeyboard()
-{
-	if (button > 0)
-	{
-		// TODO Implement keyboard actions
-		button = 0;
-	}
+	if (digitalRead(pinUp)) { button = ButtonPlus; }
+	if (digitalRead(pinDown)) { button = ButtonMinus; }
+	if (digitalRead(pinLeft)) { button = ButtonLeft; }
+	if (digitalRead(pinRight)) { button = ButtonRight; }
+	if (digitalRead(pinOk)) { button = ButtonOk; }
 }
 
 // Draw Display on I2C OLED Module
@@ -458,12 +414,34 @@ void DisplayValues()
 // Play selected sound file from SD Card
 void PlaySound(String soundName)
 {
-	// TODO: Implement PlaySound from SD Card
+	if (enableAudio) 
+	{
+		// TODO: Implement PlaySound from SD Card
+	}
 }
-
 
 // Set time in RTC module
 void SetRealTime(DateTime t)
 {
 	rtc.init(t.Seconds, t.Minutes, t.Hours, t.Day, t.Month, t.Year);
+}
+
+#include "Automaton.h"
+Automaton menu;	// Manual Menu handler
+
+// Navigate trough menu on LCD display
+void ConsumeKeyboard()
+{
+	if (button != ButtonNone)
+	{
+		// TODO Implement keyboard actions
+
+		// Delay if some button was pressed to prevent repeating
+		if (button != ButtonNone)
+		{
+			menu.OnKeyPress(button);
+			button = ButtonNone;
+			delay(250);
+		}
+	}
 }

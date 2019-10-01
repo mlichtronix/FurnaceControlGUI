@@ -15,7 +15,8 @@
         /// <param name="line"></param>
         public void Add(string line)
         {
-            builder.Append($"{Environment.NewLine}[{DateTime.Now}] {line.Trim()}");
+            builder.Insert(0, $"{Environment.NewLine}[{DateTime.Now}] {line.Trim()}");
+            //builder.Append($"{Environment.NewLine}[{DateTime.Now}] {line.Trim()}");
             OnPropertyChanged("Log");
         }
 

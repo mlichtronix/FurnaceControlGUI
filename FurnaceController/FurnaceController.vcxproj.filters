@@ -35,6 +35,15 @@
     <ClInclude Include="PredefinedPrograms.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Automaton.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Button.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Definitions.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DS1302.cpp" />
@@ -42,5 +51,6 @@
     <ClCompile Include="FirigProgram.cpp" />
     <ClCompile Include="ProgramBlock.cpp" />
     <ClCompile Include="Extensions.h" />
+    <ClCompile Include="Automaton.cpp" />
   </ItemGroup>
 </Project>

@@ -88,11 +88,8 @@ FiringProgram * ParseProgram(String data)
 
 	FiringProgram * p = new FiringProgram();
 	p->WasParsingValid = false;
-	Serial.println(data);
 	LinkedList<String> headTail = SplitString(data, '|');
 	p->Name = headTail.get(0);
-	//headTail->clear();
-	//delete headTail;
 
 	// Split blocks
 	LinkedList<String> blocksStr = SplitString(headTail.get(1), ';');
@@ -102,6 +99,7 @@ FiringProgram * ParseProgram(String data)
 	{
 		// Split values
 		LinkedList<String> values = SplitString(blocksStr.get(i), '*');
+		
 		// Verify that all values are valid
 		if (values.size() == 3 &&
 			isNumber(values.get(0)) &&
@@ -117,14 +115,10 @@ FiringProgram * ParseProgram(String data)
 		}
 		else
 		{
-			//blocksStr->clear();
-			//delete blocksStr;
 			return p; // Error occured
 		}
 	}
-	//blocksStr->clear();
-	//delete blocksStr;
-	
+
 	// Initialise new values
 	p->Blocks = blocks;
 	p->WasParsingValid = true;

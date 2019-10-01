@@ -126,7 +126,10 @@
     <None Include="README.md" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Automaton.h" />
+    <ClInclude Include="Button.h" />
     <ClInclude Include="DateTime.h" />
+    <ClInclude Include="Definitions.h" />
     <ClInclude Include="DS1302.h" />
     <ClInclude Include="PredefinedPrograms.h" />
     <ClInclude Include="ProgramBlock.h" />
@@ -135,6 +138,7 @@
     <ClInclude Include="__vm\.FurnaceController.vsarduino.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Automaton.cpp" />
     <ClCompile Include="DateTime.cpp" />
     <ClCompile Include="DS1302.cpp" />
     <ClCompile Include="ProgramBlock.cpp" />
