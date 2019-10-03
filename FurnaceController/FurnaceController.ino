@@ -40,7 +40,6 @@ long wattageDelay = 0;			// Delay counter to full power (Power grid utility safe
 int programCounter = -1;		// Id of active program node
 int remainingTime = 0;			// Remaining time of tempering period of current node
 int currentTemp = 0;			// Current temperature in furnace
-Button button = ButtonNone;		// Pressed button
 
 void SetPlan()
 {
@@ -127,7 +126,6 @@ void loop()
 	SetPlan();
 	SetRelays();
 	ReadKeyboard();
-	ConsumeKeyboard();
 	DisplayValues();
 	UpdateRemainingTime();
 }
@@ -395,16 +393,6 @@ void HaltAndReset()
 	PlaySound("Halted.vaw");
 }
 
-// Read pressed buttons
-void ReadKeyboard()
-{
-	if (digitalRead(pinUp)) { button = ButtonPlus; }
-	if (digitalRead(pinDown)) { button = ButtonMinus; }
-	if (digitalRead(pinLeft)) { button = ButtonLeft; }
-	if (digitalRead(pinRight)) { button = ButtonRight; }
-	if (digitalRead(pinOk)) { button = ButtonOk; }
-}
-
 // Draw Display on I2C OLED Module
 void DisplayValues()
 {
@@ -430,18 +418,18 @@ void SetRealTime(DateTime t)
 Automaton menu;	// Manual Menu handler
 
 // Navigate trough menu on LCD display
-void ConsumeKeyboard()
+void ReadKeyboard()
 {
-	if (button != ButtonNone)
+	Button pressed = ButtonNone;
+	if (digitalRead(pinUp)) { pressed = ButtonPlus; }
+	if (digitalRead(pinDown)) { pressed = ButtonMinus; }
+	if (digitalRead(pinLeft)) { pressed = ButtonLeft; }
+	if (digitalRead(pinRight)) { pressed = ButtonRight; }
+	if (digitalRead(pinOk)) { pressed = ButtonOk; }
+	if (pressed != ButtonNone)
 	{
-		// TODO Implement keyboard actions
-
-		// Delay if some button was pressed to prevent repeating
-		if (button != ButtonNone)
-		{
-			menu.OnKeyPress(button);
-			button = ButtonNone;
-			delay(250);
-		}
+		SendMessage(LogMessage, "Pressed: [" + String(pressed) + "]" );
+		menu.OnKeyPress(pressed);
+		delay(250);
 	}
 }

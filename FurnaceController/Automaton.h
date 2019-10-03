@@ -1,10 +1,11 @@
 #pragma once
-#include "Button.h"
-#include "DateTime.h"
-#include "WString.h"
-#include "Action.h"
-#include "ScreenType.h"
 #include "Node.h"
+#include "Action.h"
+#include "Button.h"
+#include "WString.h"
+#include "DateTime.h"
+#include "ScreenType.h"
+#include "Definitions.h"
 
 class Automaton
 {
@@ -51,21 +52,21 @@ private:
 			case ScreenNow: DrawNow(); break;
 			case ScreenSchedule: DrawSchedule(); break;
 			case ScreenHalt: DrawHalt(); break;
-			default: DrawError(); break;
+			default: DrawError("Undefined ScreenType"); break;
 		}
 	}
 
-	void DrawIdle() {}
-	void DrawMenu() {}
-	void DrawSettings() {}
-	void DrawFiring() {}
-	void DrawTime() {}
-	void DrawPorgram() {}
-	void DrawNow() {}
-	void DrawSchedule() {}
-	void DrawHalt() {}
-	void DrawError() {}
-
+	void DrawIdle() { SendMessage(LogMessage, "Idle Screen"); }
+	void DrawMenu() { SendMessage(LogMessage, "Menu Screen"); }
+	void DrawSettings() { SendMessage(LogMessage, "Settings Screen"); }
+	void DrawFiring() { SendMessage(LogMessage, "Firing Screen"); }
+	void DrawTime() { SendMessage(LogMessage, "Time Screen"); }
+	void DrawPorgram() { SendMessage(LogMessage, "Program Screen"); }
+	void DrawNow() { SendMessage(LogMessage, "Now Screen"); }
+	void DrawSchedule() { SendMessage(LogMessage, "Schedule Screen"); }
+	void DrawHalt() { SendMessage(LogMessage, "Halt Screen"); }
+	void DrawError(String message) { SendMessage(LogMessage, "Error Screen: [" + message + "]"); }
+	
 	void DoAction(Action a)
 	{
 		switch (a)
@@ -139,7 +140,7 @@ private:
 			case ActionSchSecondsI: nodeSchSeconds.RotateUp(); return;
 			case ActionSchSecondsD: nodeSchSeconds.RotateDown(); return;
 			default:	// Something went wrong
-				SendMessage(990, "Undefined action!");
+				SendMessage(Error, "Undefined action!");
 				break;
 		}
 	}
