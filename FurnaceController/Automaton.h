@@ -1,56 +1,70 @@
 #pragma once
-#include "WString.h"
-#include <stdio.h>
 #include "Button.h"
-
-enum Action
-{
-	ActionNone = 0,						// No Action required
-	ActionStart, ActionHalt,			// Start / Halt furnace
-	ActionP1, ActionP2, ActionP3, ActionP4, ActionP5, ActionP6, ActionP7,		// Set Program #
-	ActionTimeYearI, ActionTimeMonthI, ActionTimeDayI, ActionTimeHoursI, ActionTimeMinutesI, ActionTimeSecondsI,		// Set real time - Increase
-	ActionTimeYearD, ActionTimeMonthD, ActionTimeDayD, ActionTimeHoursD, ActionTimeMinutesD, ActionTimeSecondsD,		// Set real time - Decrease
-	ActionApplyRtc,						// Apply RealTimeClock Values
-	ActionSchedNow,						// Set RTC as Start Time
-	ActionSchedYearI, ActionSchedMonthI, ActionSchedDayI, ActionSchedHoursI, ActionSchedMinutesI, ActionSchedSecondsI,		// Set Schedule time - Increase
-	ActionSchedYearD, ActionSchedMonthD, ActionSchedDayD, ActionSchedHoursD, ActionSchedMinutesD, ActionSchedSecondsD,		// Set Schedule time - Decrease
-	ActionSound, ActionFailSignal		// Enable / Disable audio signalization
-};
-
-class Node;		// Declaration for recurent inclusion (Chicken-Egg dilemma)
-class Edge
-{
-public:
-	Node * target;
-	Action action;
-	Button button;
-	Edge() {};
-	Edge(Button b, Node * t, Action a)
-	{
-		target = t;
-		action = a;
-		button = b;
-	}
-	~Edge() { delete target; }
-};
-
-class Node
-{
-public:
-	String label;
-	LinkedList<Edge> edges;
-	Node()
-	{
-		edges = LinkedList<Edge>();
-	};
-	Node::~Node() {};
-};
+#include "DateTime.h"
+#include "WString.h"
+#include "Action.h"
+#include "ScreenType.h"
+#include "State.h"
 
 class Automaton
 {
 private:
-	DateTime clockTmp;		// Temp variable for updating RTC
-	DateTime scheduleTmp;	// Temp variable for updating Schedule
+	State * Current;	// Current Node
+
+	// Node Set
+	State nodeMenu; 			// 1
+	State nodeFiring;			// 2
+	State nodeSettings;			// 3
+	State nodeSelectProgram;	// 4
+	State nodeProgram;			// 5
+	State nodeSchedule;			// 6
+	State nodeStart;			// 7
+	State nodeHalt;				// 8
+	State nodeSchNow;			// 9
+	State nodeSchYear;			// 10
+	State nodeSchMonth;			// 11
+	State nodeSchDay;			// 12
+	State nodeSchHours;			// 13
+	State nodeSchMinutes;		// 14
+	State nodeSchSeconds;		// 15
+	State nodeSchApply;			// 16
+	State nodeAudio;			// 17
+	State nodeTime;				// 18
+	State nodeTimeYear;			// 19
+	State nodeTimeMonth;		// 20
+	State nodeTimeDay;			// 21
+	State nodeTimeHours;		// 22
+	State nodeTimeMinutes;		// 23
+	State nodeTimeSeconds;		// 24
+	State nodeTimeApply;		// 25
+
+	void DrawOnDisplay()
+	{
+		switch (Current->type)
+		{
+			case ScreenIdle: DrawIdle(); break;
+			case ScreenMenu: DrawMenu(); break;
+			case ScreenSettings: DrawSettings(); break;
+			case ScreenFiring: DrawFiring(); break;
+			case ScreenTime: DrawTime(); break;
+			case ScreenProgram: DrawPorgram(); break;
+			case ScreenNow: DrawNow(); break;
+			case ScreenSchedule: DrawSchedule(); break;
+			case ScreenHalt: DrawHalt(); break;
+			default: DrawError(); break;
+		}
+	}
+
+	void DrawIdle() {}
+	void DrawMenu() {}
+	void DrawSettings() {}
+	void DrawFiring() {}
+	void DrawTime() {}
+	void DrawPorgram() {}
+	void DrawNow() {}
+	void DrawSchedule() {}
+	void DrawHalt() {}
+	void DrawError() {}
 
 	void DoAction(Action a)
 	{
@@ -59,179 +73,271 @@ private:
 			// Operation
 			case ActionNone: return;									// Do nothing (No key was pressed)
 			case ActionFailSignal: PlaySound("FailKey.vaw"); return;	// Play Sound when wronk key pressed
-			case ActionStart: { ScheduleTime = scheduleTmp; halted = false; } return;	// Set Begin Time and Start
+			case ActionStart:	// Set Begin Time and Start
+			{
+				ScheduleTime.Year = nodeSchYear.GetValue();
+				ScheduleTime.Month = nodeSchMonth.GetValue();
+				ScheduleTime.Day = nodeSchDay.GetValue();
+				ScheduleTime.Hours = nodeSchHours.GetValue();
+				ScheduleTime.Minutes = nodeSchMinutes.GetValue();
+				ScheduleTime.Seconds = nodeSchSeconds.GetValue();
+				halted = false;
+				return;
+			}
 			case ActionHalt: HaltAndReset(); return;					// Halt Furnace and reset
-			case ActionSound: enableAudio = !enableAudio; return;
-			// Select Predefined Program
-			case ActionP1: SetPredefinedProgram(0); return;		// Program 1
-			case ActionP2: SetPredefinedProgram(1); return;		// Program 2
-			case ActionP3: SetPredefinedProgram(2); return;		// Program 3
-			case ActionP4: SetPredefinedProgram(3); return;		// program 4
-			case ActionP5: SetPredefinedProgram(4); return;		// Program 5
-			case ActionP6: SetPredefinedProgram(5); return;		// Program 6
-			case ActionP7: SetPredefinedProgram(6); return;		// program 7
-			// RTC
-			case ActionTimeYearI: clockTmp.Year = RotateUp(clockTmp.Year, 2019, 2050); return;
-			case ActionTimeYearD: clockTmp.Year = RotateDown(clockTmp.Year, 2019, 2050); return;
-			case ActionTimeMonthI: clockTmp.Month = RotateUp(clockTmp.Month, 1, 12); return;
-			case ActionTimeMonthD: clockTmp.Month = RotateDown(clockTmp.Month, 1, 12); return;
-			case ActionTimeDayI: clockTmp.Day = RotateUp(clockTmp.Day, 1, 31); return;
-			case ActionTimeDayD: clockTmp.Day = RotateDown(clockTmp.Day, 1, 31); return;
-			case ActionTimeHoursI: clockTmp.Hours = RotateUp(clockTmp.Hours, 0, 23); return;
-			case ActionTimeHoursD: clockTmp.Hours = RotateDown(clockTmp.Hours, 0, 23); return;
-			case ActionTimeMinutesI: clockTmp.Minutes = RotateUp(clockTmp.Minutes, 0, 59); return;
-			case ActionTimeMinutesD: clockTmp.Minutes = RotateDown(clockTmp.Minutes, 0, 59); return;
-			case ActionTimeSecondsI: clockTmp.Seconds = RotateUp(clockTmp.Seconds, 0, 59); return;
-			case ActionTimeSecondsD: clockTmp.Seconds = RotateDown(clockTmp.Seconds, 0, 59); return;
-			case ActionApplyRtc: SetRealTime(clockTmp); return;		// Set Real Time Clock
+			case ActionSound: enableAudio = !enableAudio; return;		// Enable or Disable Audio Signalization
+			case ActionSetProgram: SetPredefinedProgram(Current->GetValue() - 1); return; // Select Predefined Program
+			case ActionProgramI: nodeProgram.RotateUp(); return;
+			case ActionProgramD: nodeProgram.RotateDown(); return;
+				// RTC
+			case ActionTimeYearI: nodeTimeYear.RotateUp(); return;
+			case ActionTimeYearD: nodeTimeYear.RotateDown(); return;
+			case ActionTimeMonthI: nodeTimeMonth.RotateUp(); return;
+			case ActionTimeMonthD: nodeTimeMonth.RotateDown(); return;
+			case ActionTimeDayI: nodeTimeDay.RotateUp(); return;
+			case ActionTimeDayD: nodeTimeDay.RotateDown(); return;
+			case ActionTimeHoursI: nodeTimeHours.RotateUp(); return;
+			case ActionTimeHoursD: nodeTimeHours.RotateDown(); return;
+			case ActionTimeMinutesI: nodeTimeMinutes.RotateUp(); return;
+			case ActionTimeMinutesD: nodeTimeMinutes.RotateDown(); return;
+			case ActionTimeSecondsI: nodeTimeSeconds.RotateUp(); return;
+			case ActionTimeSecondsD: nodeTimeSeconds.RotateDown(); return;
+			case ActionTimeApply:
+			{
+				DateTime tmp;
+				tmp.Year = nodeTimeYear.GetValue();
+				tmp.Month = nodeTimeMonth.GetValue();
+				tmp.Day = nodeTimeDay.GetValue();
+				tmp.Hours = nodeTimeHours.GetValue();
+				tmp.Minutes = nodeTimeMinutes.GetValue();
+				tmp.Seconds = nodeTimeSeconds.GetValue();
+				SetRealTime(tmp);
+				return;
+			}
 			// Schedule
-			case ActionSchedNow: scheduleTmp = rtc.Now(); return;	// Set Schedule to Current Time
-			case ActionSchedYearI: scheduleTmp.Year = RotateUp(scheduleTmp.Year, 2019, 2050); return;
-			case ActionSchedYearD: scheduleTmp.Year = RotateDown(scheduleTmp.Year, 2019, 2050); return;
-			case ActionSchedMonthI: scheduleTmp.Month = RotateUp(scheduleTmp.Month, 1, 12); return;
-			case ActionSchedMonthD: scheduleTmp.Month = RotateDown(scheduleTmp.Month, 1, 12); return;
-			case ActionSchedDayI: scheduleTmp.Day = RotateUp(scheduleTmp.Day, 1, 31); return;
-			case ActionSchedDayD: scheduleTmp.Day = RotateDown(scheduleTmp.Day, 1, 31); return;
-			case ActionSchedHoursI: scheduleTmp.Hours = RotateUp(scheduleTmp.Hours, 0, 23); return;
-			case ActionSchedHoursD: scheduleTmp.Hours = RotateDown(scheduleTmp.Hours, 0, 23); return;
-			case ActionSchedMinutesI: scheduleTmp.Minutes = RotateUp(scheduleTmp.Minutes, 0, 59); return;
-			case ActionSchedMinutesD: scheduleTmp.Minutes = RotateDown(scheduleTmp.Minutes, 0, 59); return;
-			case ActionSchedSecondsI: scheduleTmp.Seconds = RotateUp(scheduleTmp.Seconds, 0, 59); return;
-			case ActionSchedSecondsD: scheduleTmp.Seconds = RotateDown(scheduleTmp.Seconds, 0, 59); return;
-			// Something went wrong
-			default: SendMessage(Error, "Undefined action! [" + String(a) + "]"); break;
+			case ActionSchNow:
+			{
+				DateTime now = rtc.Now();
+				nodeSchYear.SetValue(now.Year);
+				nodeSchMonth.SetValue(now.Month);
+				nodeSchDay.SetValue(now.Day);
+				nodeSchHours.SetValue(now.Hours);
+				nodeSchMinutes.SetValue(now.Minutes);
+				nodeSchSeconds.SetValue(now.Seconds);
+				return;
+			}
+			case ActionSchYearI: nodeSchYear.RotateUp(); return;
+			case ActionSchYearD: nodeSchYear.RotateDown(); return;
+			case ActionSchMonthI: nodeSchMonth.RotateUp(); return;
+			case ActionSchMonthD: nodeSchMonth.RotateDown(); return;
+			case ActionSchDayI: nodeSchDay.RotateUp(); return;
+			case ActionSchDayD: nodeSchDay.RotateDown(); return;
+			case ActionSchHoursI: nodeSchHours.RotateUp(); return;
+			case ActionSchHoursD: nodeSchHours.RotateDown(); return;
+			case ActionSchMinutesI: nodeSchMinutes.RotateUp(); return;
+			case ActionSchMinutesD: nodeSchMinutes.RotateDown(); return;
+			case ActionSchSecondsI: nodeSchSeconds.RotateUp(); return;
+			case ActionSchSecondsD: nodeSchSeconds.RotateDown(); return;
+			default:	// Something went wrong
+				SendMessage(990, "Undefined action!");
+				break;
 		}
 	}
 
-	int RotateUp(int val, int min, int max)
-	{
-		return val++ < max ? val : min;
-	}
-
-	int RotateDown(int val, int min, int max)
-	{
-		return val-- > min ? val : max;
-	}
-
 public:
-	Node * Current;
-
 	Automaton()
 	{
-		// Create Node Set
-		Node nodeMenu, nodeFiring, nodeSettings, nodeProgram, nodeSchedule, nodeStart, nodeHalt;
-		Node nodeP1, nodeP2, nodeP3, nodeP4, nodeP5, nodeP6, nodeP7;
-		Node nodeSchNow, nodeSchYear, nodeSchMonth, nodeSchDay, nodeSchHours, nodeSchMinutes, nodeSchSeconds;
-		Node nodeSchApply, nodeTimeApply, nodeAudio;
-		Node nodeTime, nodeTimeYear, nodeTimeMonth, nodeTimeDay, nodeTimeHours, nodeTimeMinutes, nodeTimeSeconds;
+		// Initialise Nodes and Edges
+		DateTime now = rtc.Now();
 
-		// Create Edge Set and initialize Localized Labels
+		nodeMenu = State(ScreenIdle);								// 1
+		nodeFiring = State(ScreenMenu);								// 2
+		nodeSettings = State(ScreenMenu);							// 3
+		nodeSelectProgram = State(ScreenFiring);					// 4
+		nodeProgram = State(ScreenProgram, 1, 1, 7);				// 5
+		nodeSchedule = State(ScreenFiring);							// 6
+		nodeStart = State(ScreenFiring);							// 7
+		nodeHalt = State(ScreenHalt);								// 8
+		nodeSchNow = State(ScreenNow);								// 9
+		nodeSchYear = State(ScreenSchedule, now.Year, 2019, 2050);	// 10
+		nodeSchMonth = State(ScreenSchedule, now.Month, 1, 12);		// 11
+		nodeSchDay = State(ScreenSchedule, now.Day, 1, 31);			// 12
+		nodeSchHours = State(ScreenSchedule, now.Hours, 0, 23);		// 13
+		nodeSchMinutes = State(ScreenSchedule, now.Minutes, 0, 59);	// 14
+		nodeSchSeconds = State(ScreenSchedule, now.Seconds, 0, 59);	// 15
+		nodeSchApply = State(ScreenSchedule);						// 16
+		nodeAudio = State(ScreenSettings, int(enableAudio), 0, 1);	// 17
+		nodeTime = State(ScreenSettings);							// 18
+		nodeTimeYear = State(ScreenTime, now.Year, 2019, 2050);		// 19
+		nodeTimeMonth = State(ScreenTime, now.Month, 1, 12);		// 20
+		nodeTimeDay = State(ScreenTime, now.Day, 1, 31);			// 21
+		nodeTimeHours = State(ScreenTime, now.Hours, 0, 23);		// 22
+		nodeTimeMinutes = State(ScreenTime, now.Minutes, 0, 59);	// 23
+		nodeTimeSeconds = State(ScreenTime, now.Seconds, 0, 59);	// 24
+		nodeTimeApply = State(ScreenTime);							// 25
 
 		// Idle Menu
 		nodeMenu.label = "Menu";
-		nodeMenu.edges.add(Edge(ButtonRight, &nodeFiring, ActionNone));
+		nodeMenu.edges.add(Edge(ButtonRight, &nodeFiring));
 
 		// Firing
 		nodeFiring.label = "Palenie";
-		nodeFiring.edges.add(Edge(ButtonRight, &nodeProgram, ActionNone));
-		nodeFiring.edges.add(Edge(ButtonMinus, &nodeSettings, ActionNone)),
+		nodeFiring.edges.add(Edge(ButtonLeft, &nodeMenu));
+		nodeFiring.edges.add(Edge(ButtonRight, &nodeSelectProgram));
+		nodeFiring.edges.add(Edge(ButtonMinus, &nodeSettings));
 
 		// Settings
 		nodeSettings.label = "Nastavenia";
-		nodeSettings.edges.add(Edge(ButtonRight, &nodeAudio, ActionNone));
-		nodeSettings.edges.add(Edge(ButtonLeft, &nodeMenu, ActionNone));
-		nodeSettings.edges.add(Edge(ButtonPlus, &nodeFiring, ActionNone));
+		nodeSettings.edges.add(Edge(ButtonRight, &nodeAudio));
+		nodeSettings.edges.add(Edge(ButtonLeft, &nodeMenu));
+		nodeSettings.edges.add(Edge(ButtonPlus, &nodeFiring));
 
 		// Select Program
-		nodeProgram.label = "Volba programu";
-		nodeProgram.edges.add(Edge(ButtonRight, &nodeP1, ActionNone));
-		nodeProgram.edges.add(Edge(ButtonLeft, &nodeFiring, ActionNone));
-		nodeProgram.edges.add(Edge(ButtonMinus, &nodeSchedule, ActionNone));
+		nodeSelectProgram.label = "Volba programu";
+		nodeSelectProgram.edges.add(Edge(ButtonRight, &nodeProgram));
+		nodeSelectProgram.edges.add(Edge(ButtonLeft, &nodeFiring));
+		nodeSelectProgram.edges.add(Edge(ButtonMinus, &nodeSchedule));
 
 		// Schedule Time
 		nodeSchedule.label = "Cas zaciatku";
-		nodeSchedule.edges.add(Edge(ButtonRight, &nodeSchYear, ActionNone));
-		nodeSchedule.edges.add(Edge(ButtonLeft, &nodeFiring, ActionNone));
-		nodeSchedule.edges.add(Edge(ButtonMinus, &nodeStart, ActionNone));
-		nodeSchedule.edges.add(Edge(ButtonPlus, &nodeProgram, ActionNone));
+		nodeSchedule.edges.add(Edge(ButtonRight, &nodeSchNow));
+		nodeSchedule.edges.add(Edge(ButtonLeft, &nodeFiring));
+		nodeSchedule.edges.add(Edge(ButtonMinus, &nodeStart));
+		nodeSchedule.edges.add(Edge(ButtonPlus, &nodeSelectProgram));
 
 		// Start
 		nodeStart.label = "Spustit vypal";
 		nodeStart.edges.add(Edge(ButtonOk, &nodeHalt, ActionStart));
-		nodeStart.edges.add(Edge(ButtonLeft, &nodeFiring, ActionNone));
-		nodeStart.edges.add(Edge(ButtonPlus, &nodeSchedule, ActionNone));
+		nodeStart.edges.add(Edge(ButtonLeft, &nodeFiring));
+		nodeStart.edges.add(Edge(ButtonPlus, &nodeSchedule));
 
 		// Halt furnace
 		nodeHalt.label = "Zastavit vypal";
 		nodeHalt.edges.add(Edge(ButtonOk, &nodeStart, ActionHalt));
 
-		// Program 1
-		nodeP1.label = SplitString(predefined[0], '|').get(0);
-		nodeP1.edges.add(Edge(ButtonOk, &nodeSchedule, ActionP1));
-		nodeP1.edges.add(Edge(ButtonMinus, &nodeP7, ActionNone));
-		nodeP1.edges.add(Edge(ButtonPlus, &nodeP2, ActionNone));
-		nodeP1.edges.add(Edge(ButtonLeft, &nodeProgram, ActionNone));
-
-		// Program 2
-		nodeP2.label = SplitString(predefined[1], '|').get(0);
-		nodeP2.edges.add(Edge(ButtonOk, &nodeSchedule, ActionP2));
-		nodeP2.edges.add(Edge(ButtonMinus, &nodeP1, ActionNone));
-		nodeP2.edges.add(Edge(ButtonPlus, &nodeP3, ActionNone));
-		nodeP2.edges.add(Edge(ButtonLeft, &nodeProgram, ActionNone));
-
-		// Program 3
-		nodeP3.label = SplitString(predefined[2], '|').get(0);
-		nodeP3.edges.add(Edge(ButtonOk, &nodeSchedule, ActionP3));
-		nodeP3.edges.add(Edge(ButtonMinus, &nodeP2, ActionNone));
-		nodeP3.edges.add(Edge(ButtonPlus, &nodeP4, ActionNone));
-		nodeP3.edges.add(Edge(ButtonLeft, &nodeProgram, ActionNone));
-
-		// Program 4
-		nodeP4.label = SplitString(predefined[2], '|').get(0);
-		nodeP4.edges.add(Edge(ButtonOk, &nodeSchedule, ActionP4));
-		nodeP4.edges.add(Edge(ButtonMinus, &nodeP3, ActionNone));
-		nodeP4.edges.add(Edge(ButtonPlus, &nodeP5, ActionNone));
-		nodeP4.edges.add(Edge(ButtonLeft, &nodeProgram, ActionNone));
-
-		// Program 5
-		nodeP5.label = SplitString(predefined[2], '|').get(0);
-		nodeP5.edges.add(Edge(ButtonOk, &nodeSchedule, ActionP5));
-		nodeP5.edges.add(Edge(ButtonMinus, &nodeP4, ActionNone));
-		nodeP5.edges.add(Edge(ButtonPlus, &nodeP6, ActionNone));
-		nodeP5.edges.add(Edge(ButtonLeft, &nodeProgram, ActionNone));
-
-		// Program 6
-		nodeP6.label = SplitString(predefined[2], '|').get(0);
-		nodeP6.edges.add(Edge(ButtonOk, &nodeSchedule, ActionP6));
-		nodeP6.edges.add(Edge(ButtonMinus, &nodeP5, ActionNone));
-		nodeP6.edges.add(Edge(ButtonPlus, &nodeP7, ActionNone));
-		nodeP6.edges.add(Edge(ButtonLeft, &nodeProgram, ActionNone));
-
-		// Program 7
-		nodeP7.label = SplitString(predefined[2], '|').get(0);
-		nodeP7.edges.add(Edge(ButtonOk, &nodeSchedule, ActionP7));
-		nodeP7.edges.add(Edge(ButtonMinus, &nodeP6, ActionNone));
-		nodeP7.edges.add(Edge(ButtonPlus, &nodeP1, ActionNone));
-		nodeP7.edges.add(Edge(ButtonLeft, &nodeProgram, ActionNone));
-
-		// TODO:
-		nodeSchNow.label = "Teraz";
-		nodeSchYear.label = "";
-		nodeSchMonth.label = "";
-		nodeSchDay.label = "";
-		nodeSchHours.label = "";
-		nodeSchMinutes.label = "";
-		nodeSchSeconds.label = "";
-		nodeSchApply.label = "Uloz";
+		// Enable / Disable Sound Signalization
 		nodeAudio.label = "Zvuk";
-		nodeTime.label = "Cas";
-		nodeTimeYear.label = "";
-		nodeTimeMonth.label = "";
-		nodeTimeDay.label = "";
-		nodeTimeHours.label = "";
-		nodeTimeMinutes.label = "";
-		nodeTimeSeconds.label = "";
+		nodeAudio.edges.add(Edge(ButtonOk, &nodeAudio, ActionSound));
+		nodeAudio.edges.add(Edge(ButtonLeft, &nodeSettings));
+		nodeAudio.edges.add(Edge(ButtonMinus, &nodeTime));
+
+		// Selected Program
+		nodeProgram.label = "Program";
+		nodeProgram.edges.add(Edge(ButtonOk, &nodeSchedule, ActionSetProgram));
+		nodeProgram.edges.add(Edge(ButtonMinus, &nodeProgram, ActionProgramD));
+		nodeProgram.edges.add(Edge(ButtonPlus, &nodeProgram, ActionProgramI));
+		nodeProgram.edges.add(Edge(ButtonLeft, &nodeSelectProgram));
+
+		// Schedule Now (Set Immediate start)
+		nodeSchNow.label = "Teraz";
+		nodeSchNow.edges.add(Edge(ButtonOk, &nodeStart, ActionSchNow));
+		nodeSchNow.edges.add(Edge(ButtonLeft, &nodeSchedule));
+		nodeSchNow.edges.add(Edge(ButtonRight, &nodeSchYear));
+
+		// Schedule Year
+		nodeSchYear.label = "Rok";
+		nodeSchYear.edges.add(Edge(ButtonLeft, &nodeSchNow));
+		nodeSchYear.edges.add(Edge(ButtonRight, &nodeSchMonth));
+		nodeSchYear.edges.add(Edge(ButtonPlus, &nodeSchYear, ActionSchYearI));
+		nodeSchYear.edges.add(Edge(ButtonMinus, &nodeSchYear, ActionSchYearD));
+
+		// Schedule Month
+		nodeSchMonth.label = "Mesiac";
+		nodeSchMonth.edges.add(Edge(ButtonLeft, &nodeSchYear));
+		nodeSchMonth.edges.add(Edge(ButtonRight, &nodeSchDay));
+		nodeSchMonth.edges.add(Edge(ButtonPlus, &nodeSchMonth, ActionSchMonthI));
+		nodeSchMonth.edges.add(Edge(ButtonMinus, &nodeSchMonth, ActionSchMonthD));
+
+		// Schedule Day
+		nodeSchDay.label = "Den";
+		nodeSchDay.edges.add(Edge(ButtonLeft, &nodeSchMonth));
+		nodeSchDay.edges.add(Edge(ButtonRight, &nodeSchHours));
+		nodeSchDay.edges.add(Edge(ButtonPlus, &nodeSchDay, ActionSchDayI));
+		nodeSchDay.edges.add(Edge(ButtonMinus, &nodeSchDay, ActionSchDayD));
+
+		// Schedule Hours
+		nodeSchHours.label = "Hodiny";
+		nodeSchHours.edges.add(Edge(ButtonLeft, &nodeSchDay));
+		nodeSchHours.edges.add(Edge(ButtonRight, &nodeSchMinutes));
+		nodeSchHours.edges.add(Edge(ButtonPlus, &nodeSchHours, ActionSchHoursI));
+		nodeSchHours.edges.add(Edge(ButtonMinus, &nodeSchHours, ActionSchHoursD));
+
+		// Schedule Minutes
+		nodeSchMinutes.label = "Minuty";
+		nodeSchMinutes.edges.add(Edge(ButtonLeft, &nodeSchHours));
+		nodeSchMinutes.edges.add(Edge(ButtonRight, &nodeSchSeconds));
+		nodeSchMinutes.edges.add(Edge(ButtonPlus, &nodeSchMinutes, ActionSchMinutesI));
+		nodeSchMinutes.edges.add(Edge(ButtonMinus, &nodeSchMinutes, ActionSchMinutesD));
+
+		// Schedule Seconds
+		nodeSchSeconds.label = "Sekundy";
+		nodeSchSeconds.edges.add(Edge(ButtonLeft, &nodeSchMinutes));
+		nodeSchSeconds.edges.add(Edge(ButtonRight, &nodeSchApply));
+		nodeSchSeconds.edges.add(Edge(ButtonPlus, &nodeSchSeconds, ActionSchSecondsI));
+		nodeSchSeconds.edges.add(Edge(ButtonMinus, &nodeSchSeconds, ActionSchSecondsD));
+
+		// Schedule Apply settings
+		nodeSchApply.label = "Uloz";
+		nodeSchApply.edges.add(Edge(ButtonOk, &nodeStart));
+		nodeSchApply.edges.add(Edge(ButtonLeft, &nodeSchSeconds));
+		nodeSchApply.edges.add(Edge(ButtonRight, &nodeSchYear));
+
+		// Set Date and Time
+		nodeTime.label = "Cas a datum";
+		nodeTime.edges.add(Edge(ButtonPlus, &nodeAudio));
+		nodeTime.edges.add(Edge(ButtonLeft, &nodeSettings));
+		nodeTime.edges.add(Edge(ButtonRight, &nodeTimeYear));
+
+		// Date Year
+		nodeTimeYear.label = "Rok";
+		nodeTimeYear.edges.add(Edge(ButtonLeft, &nodeTime));
+		nodeTimeYear.edges.add(Edge(ButtonRight, &nodeTimeMonth));
+		nodeTimeYear.edges.add(Edge(ButtonPlus, &nodeTimeYear, ActionTimeYearI));
+		nodeTimeYear.edges.add(Edge(ButtonMinus, &nodeTimeYear, ActionTimeYearD));
+
+		// Date Month
+		nodeTimeMonth.label = "Mesiac";
+		nodeTimeMonth.edges.add(Edge(ButtonLeft, &nodeTimeYear));
+		nodeTimeMonth.edges.add(Edge(ButtonRight, &nodeTimeDay));
+		nodeTimeMonth.edges.add(Edge(ButtonPlus, &nodeTimeMonth, ActionTimeMonthI));
+		nodeTimeMonth.edges.add(Edge(ButtonMinus, &nodeTimeMonth, ActionTimeMonthD));
+
+		// Date Day
+		nodeTimeDay.label = "Den";
+		nodeTimeDay.edges.add(Edge(ButtonLeft, &nodeTimeMonth));
+		nodeTimeDay.edges.add(Edge(ButtonRight, &nodeTimeHours));
+		nodeTimeDay.edges.add(Edge(ButtonPlus, &nodeTimeDay, ActionTimeDayI));
+		nodeTimeDay.edges.add(Edge(ButtonMinus, &nodeTimeDay, ActionTimeDayD));
+
+		// Time Hours
+		nodeTimeHours.label = "Hodiny";
+		nodeTimeHours.edges.add(Edge(ButtonLeft, &nodeTimeDay));
+		nodeTimeHours.edges.add(Edge(ButtonRight, &nodeTimeMinutes));
+		nodeTimeHours.edges.add(Edge(ButtonPlus, &nodeTimeHours, ActionTimeHoursI));
+		nodeTimeHours.edges.add(Edge(ButtonMinus, &nodeTimeHours, ActionTimeHoursD));
+
+		// Time Minutes
+		nodeTimeMinutes.label = "Miuty";
+		nodeTimeMinutes.edges.add(Edge(ButtonLeft, &nodeTimeHours));
+		nodeTimeMinutes.edges.add(Edge(ButtonRight, &nodeTimeSeconds));
+		nodeTimeMinutes.edges.add(Edge(ButtonPlus, &nodeTimeMinutes, ActionTimeMinutesI));
+		nodeTimeMinutes.edges.add(Edge(ButtonMinus, &nodeTimeMinutes, ActionTimeMinutesD));
+
+		// Time Seconds
+		nodeTimeSeconds.label = "Sekundy";
+		nodeTimeSeconds.edges.add(Edge(ButtonLeft, &nodeTimeMinutes));
+		nodeTimeSeconds.edges.add(Edge(ButtonRight, &nodeTimeApply));
+		nodeTimeSeconds.edges.add(Edge(ButtonPlus, &nodeTimeSeconds, ActionTimeSecondsI));
+		nodeTimeSeconds.edges.add(Edge(ButtonMinus, &nodeTimeSeconds, ActionTimeSecondsD));
+
+		// Set current time
 		nodeTimeApply.label = "Uloz";
+		nodeTimeApply.edges.add(Edge(ButtonLeft, &nodeTimeSeconds, ActionNone));
+		nodeTimeApply.edges.add(Edge(ButtonRight, &nodeTimeYear, ActionNone));
+		nodeTimeApply.edges.add(Edge(ButtonOk, &nodeTime, ActionTimeApply));
+
+		// Set root node
+		Current = &nodeMenu;
 	}
 
 	// Key-Press Event Handler
@@ -244,9 +350,14 @@ public:
 				Edge e = Current->edges.get(i);
 				DoAction(e.action);
 				Current = e.target;
+				DrawOnDisplay();
 				return;
 			}
 		}
 		DoAction(ActionFailSignal);
+		DrawOnDisplay();
 	}
+
+	void JumpToHaltNode() { Current = &nodeHalt; }
+	void JumpToMenuNode() { Current = &nodeMenu; }
 };

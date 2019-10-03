@@ -44,6 +44,15 @@
     <ClInclude Include="Definitions.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Action.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ScreenType.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="State.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DS1302.cpp" />
@@ -51,6 +60,5 @@
     <ClCompile Include="FirigProgram.cpp" />
     <ClCompile Include="ProgramBlock.cpp" />
     <ClCompile Include="Extensions.h" />
-    <ClCompile Include="Automaton.cpp" />
   </ItemGroup>
 </Project>
