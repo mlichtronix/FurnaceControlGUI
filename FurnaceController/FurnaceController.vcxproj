@@ -136,7 +136,7 @@
     <ClInclude Include="ProgramBlock.h" />
     <ClInclude Include="FiringProgram.h" />
     <ClInclude Include="ScreenType.h" />
-    <ClInclude Include="State.h" />
+    <ClInclude Include="Node.h" />
     <ClInclude Include="stddef.h" />
     <ClInclude Include="__vm\.FurnaceController.vsarduino.h" />
   </ItemGroup>
